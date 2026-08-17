@@ -7,9 +7,10 @@ interface QualityToggleProps {
 }
 
 /**
- * Two-option pill toggle for selecting background-removal quality:
- *   fast    — U2Net (default, quick)
- *   quality — BiRefNet (best edge detail, slower first load)
+ * Three-option pill toggle for selecting background-removal quality:
+ *   fast     — ISNet (default, quickest)
+ *   standard — U²-Net human seg (portrait-optimised, best for people)
+ *   quality  — BiRefNet (best edge detail for anything, slower)
  */
 export default function QualityToggle({ value, onChange, disabled }: QualityToggleProps) {
   return (
@@ -21,7 +22,7 @@ export default function QualityToggle({ value, onChange, disabled }: QualityTogg
         role="radiogroup"
         aria-label="Background removal quality"
         className={`
-          inline-flex rounded-lg border border-border bg-surface-raised p-0.5 gap-0.5
+          flex flex-col rounded-lg border border-border bg-surface-raised p-0.5 gap-0.5
           ${disabled ? 'opacity-50 pointer-events-none' : ''}
         `}
       >
@@ -30,7 +31,8 @@ export default function QualityToggle({ value, onChange, disabled }: QualityTogg
             {
               id:          'fast' as Quality,
               label:       'Fast',
-              description: 'U2Net · quick results',
+              description: 'ISNet · quick results',
+              accent:      'text-teal',
               icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"
                   fill="currentColor" className="w-3.5 h-3.5 shrink-0" aria-hidden="true">
@@ -39,9 +41,22 @@ export default function QualityToggle({ value, onChange, disabled }: QualityTogg
               ),
             },
             {
+              id:          'standard' as Quality,
+              label:       'Standard',
+              description: 'U²-Net · best for people',
+              accent:      'text-magenta',
+              icon: (
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"
+                  fill="currentColor" className="w-3.5 h-3.5 shrink-0" aria-hidden="true">
+                  <path d="M8 8a3 3 0 100-6 3 3 0 000 6zM12.735 14c.618 0 1.093-.561.872-1.139a6.002 6.002 0 00-11.215 0c-.22.578.254 1.139.872 1.139h9.47z"/>
+                </svg>
+              ),
+            },
+            {
               id:          'quality' as Quality,
               label:       'Quality',
               description: 'BiRefNet · best edges',
+              accent:      'text-purple-400',
               icon: (
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16"
                   fill="currentColor" className="w-3.5 h-3.5 shrink-0" aria-hidden="true">
@@ -60,20 +75,20 @@ export default function QualityToggle({ value, onChange, disabled }: QualityTogg
               onClick={() => onChange(opt.id)}
               disabled={disabled}
               className={`
-                flex items-center gap-2 px-3 py-2 rounded-md text-sm
-                transition-all duration-150 select-none
+                w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm
+                transition-all duration-150 select-none text-left
                 ${active
                   ? 'bg-surface shadow-sm text-primary font-semibold border border-border'
                   : 'text-secondary hover:text-primary'
                 }
               `}
             >
-              <span className={active ? 'text-magenta' : 'text-muted'}>
+              <span className={`shrink-0 ${active ? opt.accent : 'text-muted'}`}>
                 {opt.icon}
               </span>
-              <span className="flex flex-col items-start leading-none gap-0.5">
+              <span className="flex flex-col items-start leading-none gap-0.5 min-w-0">
                 <span>{opt.label}</span>
-                <span className={`text-[10px] font-normal ${active ? 'text-muted' : 'text-muted/60'}`}>
+                <span className={`text-[10px] font-normal truncate w-full ${active ? 'text-muted' : 'text-muted/60'}`}>
                   {opt.description}
                 </span>
               </span>

@@ -1,10 +1,19 @@
 import { useState } from 'react'
-import type { HistoryItem } from '../hooks/useHistory'
+import type { HistoryItem, OperationType } from '../hooks/useHistory'
+import { OPERATION_LABELS } from '../hooks/useHistory'
 import ExportModal from './ExportModal'
 
 interface HistoryCardProps {
   item: HistoryItem
   onDelete: (uploadId: string) => void
+}
+
+/** Tailwind colour classes per operation type */
+const BADGE_STYLES: Record<OperationType, string> = {
+  remove_bg:  'bg-teal/15 text-teal border-teal/30',
+  enhance:    'bg-amber-400/15 text-amber-500 border-amber-400/30',
+  replace_bg: 'bg-violet-500/15 text-violet-500 border-violet-500/30',
+  smart_crop: 'bg-sky-500/15 text-sky-500 border-sky-500/30',
 }
 
 export default function HistoryCard({ item, onDelete }: HistoryCardProps) {
@@ -24,10 +33,12 @@ export default function HistoryCard({ item, onDelete }: HistoryCardProps) {
       onDelete(item.upload_id)
     } else {
       setConfirmDelete(true)
-      // auto-cancel after 3s
       setTimeout(() => setConfirmDelete(false), 3000)
     }
   }
+
+  const badgeClass = BADGE_STYLES[item.operation_type] ?? 'bg-border/20 text-secondary border-border'
+  const badgeLabel = OPERATION_LABELS[item.operation_type] ?? item.operation_type
 
   return (
     <>
@@ -45,6 +56,21 @@ export default function HistoryCard({ item, onDelete }: HistoryCardProps) {
             className="max-w-full max-h-full object-contain transition-transform duration-300 group-hover:scale-105"
             loading="lazy"
           />
+
+          {/* Operation type badge — top-left corner */}
+          <span
+            className={`
+              absolute top-2 left-2
+              inline-flex items-center px-2 py-0.5 rounded-full
+              text-[10px] font-semibold tracking-wide
+              border backdrop-blur-sm
+              ${badgeClass}
+            `}
+            aria-label={`Operation: ${badgeLabel}`}
+          >
+            {badgeLabel}
+          </span>
+
           {/* Hover overlay with quick export */}
           <div className="
             absolute inset-0 bg-black/50 backdrop-blur-[2px]

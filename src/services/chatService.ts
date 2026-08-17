@@ -8,7 +8,7 @@ export const chatService = {
     if (file) {
       formData.append('file', file)
     }
-    const { data } = await apiClient.post<ChatResponse>('/chat', formData, {
+    const { data } = await apiClient.post<ChatResponse>('/api/chat', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

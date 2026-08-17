@@ -10,7 +10,7 @@ export const imageService = {
   async analyze(file: File): Promise<ImageAnalysis> {
     const formData = new FormData()
     formData.append('file', file)
-    const { data } = await apiClient.post<ImageAnalysis>('/image/analyze', formData, {
+    const { data } = await apiClient.post<ImageAnalysis>('/api/image/analyze', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -22,7 +22,7 @@ export const imageService = {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('style', style)
-    const { data } = await apiClient.post<CaptionsResponse>('/image/captions', formData, {
+    const { data } = await apiClient.post<CaptionsResponse>('/api/image/captions', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
@@ -33,7 +33,7 @@ export const imageService = {
   async getSuggestions(file: File): Promise<BackgroundSuggestionsResponse> {
     const formData = new FormData()
     formData.append('file', file)
-    const { data } = await apiClient.post<BackgroundSuggestionsResponse>('/image/suggestions', formData, {
+    const { data } = await apiClient.post<BackgroundSuggestionsResponse>('/api/image/suggestions', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },

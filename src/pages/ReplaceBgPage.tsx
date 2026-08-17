@@ -1,6 +1,7 @@
 import UploadZone from '../components/UploadZone'
 import DownloadButton from '../components/DownloadButton'
 import BackgroundPicker from '../components/BackgroundPicker'
+import QualityToggle from '../components/QualityToggle'
 import { useReplaceBg } from '../hooks/useReplaceBg'
 
 // ── Step indicator ─────────────────────────────────────────────────────────
@@ -93,10 +94,12 @@ export default function ReplaceBgPage() {
   const {
     removeStatus, originalUrl, removedUrl, removeError,
     removeBackground,
+    quality, setQuality,
     replaceStatus, replaceResult, replaceError,
     replaceBackground,
     settings, updateSetting, resetSettings,
     reset,
+    resetStep2,
   } = useReplaceBg()
 
   const isRemoving  = removeStatus  === 'removing'
@@ -105,11 +108,12 @@ export default function ReplaceBgPage() {
   const step2Done   = replaceStatus === 'done'
   const busy        = isRemoving || isReplacing
 
-  // Can apply if step 1 is done, not busy, and (image mode needs a file)
+  // Can apply if step 1 is done, not busy, and (image/library mode needs a file)
+  const needsFile = settings.bgType === 'image' || settings.bgType === 'library'
   const canApply =
     step1Done &&
     !busy &&
-    (settings.bgType !== 'image' || settings.bgFile !== null)
+    (!needsFile || settings.bgFile !== null)
 
   return (
     <main className="max-w-5xl mx-auto px-4 sm:px-6 py-12 flex flex-col gap-10">
@@ -152,7 +156,15 @@ export default function ReplaceBgPage() {
             <>
               {isRemoving
                 ? <Spinner label="Removing background…" />
-                : <UploadZone onFile={removeBackground} disabled={busy} />
+                : (
+                  <div className="flex flex-col gap-4">
+                    <UploadZone onFile={removeBackground} disabled={busy} />
+                    {/* Quality selector — shown while waiting for upload */}
+                    <div className="flex justify-center">
+                      <QualityToggle value={quality} onChange={setQuality} disabled={busy} />
+                    </div>
+                  </div>
+                )
               }
               {removeError && <ErrorBanner message={removeError} />}
             </>
@@ -294,11 +306,7 @@ export default function ReplaceBgPage() {
           {/* Re-pick hint after step 2 done */}
           {step2Done && (
             <button
-              onClick={() => {
-                // Reset only step 2 so the user can try a different background
-                // without re-uploading. We do this by resetting replaceStatus via reset+re-trigger
-                reset()
-              }}
+              onClick={resetStep2}
               className="w-full btn-ghost text-sm justify-center"
             >
               Try a different background
@@ -306,9 +314,11 @@ export default function ReplaceBgPage() {
           )}
 
           {/* Tip: image mode needs a file */}
-          {settings.bgType === 'image' && !settings.bgFile && step1Done && !step2Done && (
+          {(settings.bgType === 'image' || settings.bgType === 'library') && !settings.bgFile && step1Done && !step2Done && (
             <p className="text-xs text-warning text-center animate-fade-up" role="status">
-              Upload a background image above to enable Apply.
+              {settings.bgType === 'library'
+                ? 'Select a background from the library above to enable Apply.'
+                : 'Upload a background image above to enable Apply.'}
             </p>
           )}
 

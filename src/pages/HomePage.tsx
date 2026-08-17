@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import UploadZone from '../components/UploadZone'
 import ImageCanvas from '../components/ImageCanvas'
 import DownloadButton from '../components/DownloadButton'
@@ -13,8 +14,58 @@ const FEATURE_CHIPS = [
   { label: 'Dark mode',             icon: '🌙' },
 ]
 
+// Steps shown in sequence while the AI is working.
+// Each step advances every STEP_INTERVAL ms so the UI always feels alive.
+const FAST_STEPS = [
+  { text: 'Uploading image…',        sub: 'Sending to AI server'           },
+  { text: 'Analysing subject…',      sub: 'ISNet detecting edges'          },
+  { text: 'Removing background…',    sub: 'Generating alpha mask'          },
+  { text: 'Refining edges…',         sub: 'Smoothing transparency'         },
+  { text: 'Almost done…',            sub: 'Saving your PNG'                },
+]
+const STANDARD_STEPS = [
+  { text: 'Uploading image…',        sub: 'Sending to AI server'           },
+  { text: 'Detecting subject…',      sub: 'U²-Net portrait analysis'       },
+  { text: 'Isolating person…',       sub: 'Human segmentation model'       },
+  { text: 'Refining edges…',         sub: 'Smoothing hair & skin boundary' },
+  { text: 'Almost done…',            sub: 'Saving your PNG'                },
+]
+const QUALITY_STEPS = [
+  { text: 'Uploading image…',        sub: 'Sending to AI server'           },
+  { text: 'Analysing subject…',      sub: 'BiRefNet deep feature pass 1/2' },
+  { text: 'Fine-detail processing…', sub: 'BiRefNet deep feature pass 2/2' },
+  { text: 'Removing background…',    sub: 'Generating high-res alpha mask' },
+  { text: 'Refining edges…',         sub: 'Hair & fur detail pass'         },
+  { text: 'Almost done…',            sub: 'Saving your PNG'                },
+]
+const STEP_INTERVAL = 2800  // ms between step advances
+
 export default function HomePage() {
   const { status, result, originalUrl, error, quality, setQuality, upload, reset } = useUpload()
+
+  // ── Processing step cycling ──────────────────────────────────────────────
+  const steps = quality === 'quality' ? QUALITY_STEPS
+              : quality === 'standard' ? STANDARD_STEPS
+              : FAST_STEPS
+  const [stepIdx, setStepIdx] = useState(0)
+  const stepTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    if (status === 'uploading') {
+      setStepIdx(0)
+      stepTimer.current = setInterval(() => {
+        setStepIdx(prev => Math.min(prev + 1, steps.length - 1))
+      }, STEP_INTERVAL)
+    } else {
+      if (stepTimer.current) {
+        clearInterval(stepTimer.current)
+        stepTimer.current = null
+      }
+    }
+    return () => {
+      if (stepTimer.current) clearInterval(stepTimer.current)
+    }
+  }, [status, steps.length])
 
   const isUploading = status === 'uploading'
   const isDone      = status === 'success' && result !== null && originalUrl !== null
@@ -57,9 +108,9 @@ export default function HomePage() {
             <div
               role="status"
               aria-live="polite"
-              className="flex flex-col items-center gap-4 py-8 animate-fade-up"
+              className="flex flex-col items-center gap-5 py-8 animate-fade-up"
             >
-              {/* Multi-ring spinner */}
+              {/* Spinner */}
               <div className="relative w-14 h-14">
                 <svg className="absolute inset-0 w-14 h-14 animate-spin text-magenta" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 56 56" aria-hidden="true">
                   <circle className="opacity-15" cx="28" cy="28" r="24" stroke="currentColor" strokeWidth="4" />
@@ -70,10 +121,47 @@ export default function HomePage() {
                   <path className="opacity-60" fill="currentColor" d="M46 28a18 18 0 00-18-18v3a15 15 0 0115 15h3z" />
                 </svg>
               </div>
+
+              {/* Animated step text */}
               <div className="text-center">
-                <p className="text-primary font-medium">Processing your image…</p>
-                <p className="text-muted text-sm mt-0.5">AI is removing the background</p>
+                <p
+                  key={stepIdx}
+                  className="text-primary font-medium animate-fade-up"
+                >
+                  {steps[stepIdx].text}
+                </p>
+                <p
+                  key={`sub-${stepIdx}`}
+                  className="text-muted text-sm mt-0.5 animate-fade-up"
+                >
+                  {steps[stepIdx].sub}
+                </p>
               </div>
+
+              {/* Step progress dots */}
+              <div className="flex items-center gap-1.5" aria-hidden="true">
+                {steps.map((_, i) => (
+                  <span
+                    key={i}
+                    className={`
+                      rounded-full transition-all duration-500
+                      ${i === stepIdx
+                        ? 'w-4 h-2 bg-magenta'
+                        : i < stepIdx
+                        ? 'w-2 h-2 bg-magenta/40'
+                        : 'w-2 h-2 bg-border'
+                      }
+                    `}
+                  />
+                ))}
+              </div>
+
+              {/* Quality badge */}
+              <span className="text-xs px-2.5 py-1 rounded-full border border-border text-muted bg-surface-raised">
+                {quality === 'quality'  ? '✨ BiRefNet — best edges'
+               : quality === 'standard' ? '👤 U²-Net — portrait mode'
+               :                          '⚡ ISNet — fast mode'}
+              </span>
             </div>
           )}
 
@@ -113,6 +201,11 @@ export default function HomePage() {
                   BiRefNet
                 </span>
               )}
+              {result?.quality === 'standard' && (
+                <span className="ml-1 text-xs px-1.5 py-0.5 rounded bg-teal/10 text-teal border border-teal/20">
+                  Portrait
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -127,6 +220,27 @@ export default function HomePage() {
               />
             </div>
           </div>
+
+          {/* Tip — shown only for fast/standard mode results */}
+          {result?.quality === 'fast' && (
+            <p className="text-xs text-center text-muted px-2">
+              Not happy with the edges?{' '}
+              <button onClick={reset} className="text-magenta underline underline-offset-2 hover:no-underline">
+                Try again
+              </button>
+              {' '}with <strong className="text-secondary">Standard</strong> (portraits) or{' '}
+              <strong className="text-secondary">Quality</strong> (BiRefNet) for finer detail.
+            </p>
+          )}
+          {result?.quality === 'standard' && (
+            <p className="text-xs text-center text-muted px-2">
+              Need even sharper edges?{' '}
+              <button onClick={reset} className="text-magenta underline underline-offset-2 hover:no-underline">
+                Try again
+              </button>
+              {' '}with <strong className="text-secondary">Quality mode</strong> (BiRefNet) for the best possible result.
+            </p>
+          )}
         </div>
       )}
 

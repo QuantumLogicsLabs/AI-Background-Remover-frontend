@@ -1,6 +1,7 @@
 import { useCallback } from 'react'
 import { useDropzone, FileRejection } from 'react-dropzone'
 import BatchFileList from '../components/BatchFileList'
+import QualityToggle from '../components/QualityToggle'
 import { useBatch } from '../hooks/useBatch'
 
 const MAX_FILES   = 20
@@ -132,7 +133,7 @@ function ProgressBar({ pct, label }: { pct: number; label: string }) {
 export default function BatchPage() {
   const {
     jobStatus, job, uploadError,
-    progressPct, startBatch, downloadZip, reset,
+    progressPct, quality, setQuality, startBatch, downloadZip, reset,
   } = useBatch()
 
   const isIdle      = jobStatus === 'idle'
@@ -164,6 +165,10 @@ export default function BatchPage() {
       {/* ── Upload zone — only when idle or error ────────────────────────── */}
       {(isIdle || isError) && (
         <div className="flex flex-col gap-4 animate-fade-up">
+          {/* Quality selector — shown before starting a job */}
+          <div className="flex justify-center">
+            <QualityToggle value={quality} onChange={setQuality} disabled={busy} />
+          </div>
           <BatchDropZone onFiles={startBatch} disabled={busy} />
           {isError && uploadError && (
             <div role="alert" className="flex items-start gap-3 rounded-lg bg-surface border border-danger/40 px-4 py-3.5">
@@ -229,6 +234,14 @@ export default function BatchPage() {
               <span className={`chip gap-1.5 ${isActive ? 'text-magenta' : 'text-success'}`}>
                 <span className={`w-1.5 h-1.5 rounded-full ${isActive ? 'bg-magenta animate-pulse' : 'bg-success'}`} aria-hidden="true" />
                 {isDone ? 'Finished' : job.status === 'pending' ? 'Pending' : 'Running'}
+              </span>
+              {/* Quality badge */}
+              <span className="chip gap-1.5 text-secondary">
+                {job.quality === 'quality'
+                  ? '✨ BiRefNet'
+                  : job.quality === 'standard'
+                  ? '👤 Portrait'
+                  : '⚡ Fast'}
               </span>
             </div>
 

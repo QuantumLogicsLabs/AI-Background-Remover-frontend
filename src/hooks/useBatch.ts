@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef, useEffect } from 'react'
 import axios from 'axios'
+import type { Quality } from './useUpload'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -17,6 +18,7 @@ export interface BatchFile {
 export interface BatchJob {
   job_id:     string
   status:     'pending' | 'running' | 'done'
+  quality:    Quality
   created_at: string
   total:      number
   completed:  number
@@ -27,6 +29,7 @@ export interface BatchJob {
 export interface StartResult {
   job_id:      string
   total_files: number
+  quality:     Quality
   status:      string
 }
 
@@ -36,9 +39,10 @@ export function useBatch() {
   const [jobStatus,   setJobStatus]   = useState<JobStatus>('idle')
   const [job,         setJob]         = useState<BatchJob | null>(null)
   const [uploadError, setUploadError] = useState<string | null>(null)
+  const [quality,     setQuality]     = useState<Quality>('fast')
 
-  const pollRef    = useRef<ReturnType<typeof setInterval> | null>(null)
-  const jobIdRef   = useRef<string | null>(null)
+  const pollRef  = useRef<ReturnType<typeof setInterval> | null>(null)
+  const jobIdRef = useRef<string | null>(null)
 
   // ── Stop polling ───────────────────────────────────────────────────────
   const stopPolling = useCallback(() => {
@@ -81,6 +85,7 @@ export function useBatch() {
 
     const formData = new FormData()
     files.forEach(f => formData.append('files', f))
+    formData.append('quality', quality)
 
     try {
       const res = await axios.post<StartResult>(
@@ -99,15 +104,14 @@ export function useBatch() {
       setUploadError(msg)
       setJobStatus('error')
     }
-  }, [startPolling, stopPolling])
+  }, [quality, startPolling, stopPolling])
 
   // ── Download ZIP ───────────────────────────────────────────────────────
   const downloadZip = useCallback(() => {
     if (!jobIdRef.current) return
-    // Trigger browser download via anchor
     const a = document.createElement('a')
     a.href = `/api/batch/${jobIdRef.current}/download`
-    a.download = `batch_results.zip`
+    a.download = 'batch_results.zip'
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -132,6 +136,8 @@ export function useBatch() {
     job,
     uploadError,
     progressPct,
+    quality,
+    setQuality,
     startBatch,
     downloadZip,
     reset,

@@ -1,10 +1,11 @@
 import { useState, useCallback } from 'react'
 import axios from 'axios'
 import { useActiveImage } from '../contexts/ActiveImageContext'
+import type { Quality } from './useUpload'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
-export type BgType        = 'solid' | 'gradient' | 'image'
+export type BgType        = 'solid' | 'gradient' | 'image' | 'library'
 export type GradientDir   = 'horizontal' | 'vertical' | 'diagonal'
 export type BgFit         = 'cover' | 'contain' | 'stretch'
 export type RemoveStatus  = 'idle' | 'removing' | 'removed' | 'error'
@@ -18,6 +19,7 @@ export interface BgSettings {
   gradientDir:    GradientDir
   bgFile:         File | null
   bgFit:          BgFit
+  libraryUrl:     string | null  // tracks the selected library thumbnail URL
 }
 
 export interface RemoveResult {
@@ -40,6 +42,7 @@ export const DEFAULT_BG_SETTINGS: BgSettings = {
   gradientDir:   'vertical',
   bgFile:        null,
   bgFit:         'cover',
+  libraryUrl:    null,
 }
 
 // ── Hook ───────────────────────────────────────────────────────────────────
@@ -52,6 +55,9 @@ export function useReplaceBg() {
   const [originalUrl,   setOriginalUrl]   = useState<string | null>(null)
   const [removedUrl,    setRemovedUrl]    = useState<string | null>(null)
   const [removeError,   setRemoveError]   = useState<string | null>(null)
+
+  // Quality for step 1 inference
+  const [quality, setQuality] = useState<Quality>('fast')
 
   // Step 2 — replace bg
   const [replaceStatus, setReplaceStatus] = useState<ReplaceStatus>('idle')
@@ -88,6 +94,7 @@ export function useReplaceBg() {
 
     const formData = new FormData()
     formData.append('file', file)
+    formData.append('quality', quality)
 
     try {
       const res = await axios.post<RemoveResult>(
@@ -106,7 +113,7 @@ export function useReplaceBg() {
       setRemoveError(msg)
       setRemoveStatus('error')
     }
-  }, [setActiveImage])
+  }, [quality, setActiveImage])
 
   // ── Step 2: replace background ────────────────────────────────────────
 
@@ -117,16 +124,37 @@ export function useReplaceBg() {
     setReplaceResult(null)
     setReplaceError(null)
 
+    // 'library' is an internal UI-only tab — the API only accepts 'image'.
+    // When the user picked a library preset we have a URL (libraryUrl) but no
+    // File object.  Fetch the URL as a Blob and wrap it in a File so the
+    // backend receives a real multipart file upload.
+    const apiType = settings.bgType === 'library' ? 'image' : settings.bgType
+
+    let bgFile = settings.bgFile
+
+    if (settings.bgType === 'library' && settings.libraryUrl && !bgFile) {
+      try {
+        const resp = await fetch(settings.libraryUrl)
+        const blob = await resp.blob()
+        const ext  = blob.type.split('/')[1] || 'jpg'
+        bgFile = new File([blob], `library_bg.${ext}`, { type: blob.type })
+      } catch {
+        setReplaceError('Failed to load the selected library background. Please try again.')
+        setReplaceStatus('idle')
+        return
+      }
+    }
+
     const formData = new FormData()
     formData.append('fg_filename',    removeResult.output_filename)
-    formData.append('bg_type',        settings.bgType)
+    formData.append('bg_type',        apiType)
     formData.append('solid_color',    settings.solidColor)
     formData.append('gradient_start', settings.gradientStart)
     formData.append('gradient_end',   settings.gradientEnd)
     formData.append('gradient_dir',   settings.gradientDir)
     formData.append('bg_fit',         settings.bgFit)
-    if (settings.bgType === 'image' && settings.bgFile) {
-      formData.append('bg_file', settings.bgFile)
+    if ((settings.bgType === 'image' || settings.bgType === 'library') && bgFile) {
+      formData.append('bg_file', bgFile)
     }
 
     try {
@@ -147,6 +175,14 @@ export function useReplaceBg() {
     }
   }, [removeResult, settings])
 
+  // ── Step-2-only reset — keeps removed foreground, clears result ───────
+
+  const resetStep2 = useCallback(() => {
+    setReplaceStatus('idle')
+    setReplaceResult(null)
+    setReplaceError(null)
+  }, [])
+
   // ── Full reset ────────────────────────────────────────────────────────
 
   const reset = useCallback(() => {
@@ -165,6 +201,7 @@ export function useReplaceBg() {
     // step 1
     removeStatus, removeResult, originalUrl, removedUrl, removeError,
     removeBackground,
+    quality, setQuality,
     // step 2
     replaceStatus, replaceResult, replaceError,
     replaceBackground,
@@ -172,5 +209,6 @@ export function useReplaceBg() {
     settings, updateSetting, resetSettings,
     // global
     reset,
+    resetStep2,
   }
 }

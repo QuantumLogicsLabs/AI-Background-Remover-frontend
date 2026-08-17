@@ -127,6 +127,7 @@ export function useEnhance() {
     })
     fileRef.current = null
     setHasFile(false)
+    setSettings(DEFAULT_SETTINGS)
   }, [])
 
   return {

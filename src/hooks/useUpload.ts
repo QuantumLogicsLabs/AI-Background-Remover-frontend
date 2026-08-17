@@ -1,9 +1,10 @@
 import { useState, useCallback } from 'react'
 import axios from 'axios'
+import apiClient from '../services/apiClient'
 import { useActiveImage } from '../contexts/ActiveImageContext'
 
 export type UploadStatus = 'idle' | 'uploading' | 'success' | 'error'
-export type Quality = 'fast' | 'quality'
+export type Quality = 'fast' | 'standard' | 'quality'
 
 export interface UploadResult {
   output_filename: string
@@ -38,7 +39,7 @@ export function useUpload() {
     formData.append('quality', q)
 
     try {
-      const response = await axios.post<UploadResult>('/api/remove-background', formData, {
+      const response = await apiClient.post<UploadResult>('/api/remove-background', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       setResult(response.data)

@@ -182,6 +182,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   // ── On mount: restore access token and validate it ────────────────────────
   useEffect(() => {
+    // Use a short timeout specifically for the startup auth check so the app
+    // never hangs on a blank spinner if the backend is unreachable. Regular
+    // API calls still use the global 180s timeout.
+    const AUTH_TIMEOUT = 8000  // 8 seconds
+
     const stored = localStorage.getItem(TOKEN_KEY)
     if (!stored) {
       // No stored access token — try the refresh cookie (user may have
@@ -190,15 +195,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .post<{ access_token: string }>(
           '/api/auth/refresh',
           null,
-          { withCredentials: true },
+          { withCredentials: true, timeout: AUTH_TIMEOUT },
         )
         .then(res => {
           _storeToken(res.data.access_token)
-          return axios.get<AuthUser>('/api/auth/me')
+          return axios.get<AuthUser>('/api/auth/me', { timeout: AUTH_TIMEOUT })
         })
         .then(res => setUser(res.data))
         .catch(() => {
-          // No valid session at all — remain logged out
+          // No valid session or backend unreachable — remain logged out
           setAxiosToken(null)
         })
         .finally(() => setLoading(false))
@@ -209,14 +214,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setAxiosToken(stored)
     tokenRef.current = stored
     axios
-      .get<AuthUser>('/api/auth/me')
+      .get<AuthUser>('/api/auth/me', { timeout: AUTH_TIMEOUT })
       .then(res => {
         setToken(stored)
         setUser(res.data)
       })
       .catch(() => {
-        // Token invalid — clear it; the interceptor will handle retries
-        // for any concurrent requests
+        // Token invalid or backend unreachable — clear stored token
         localStorage.removeItem(TOKEN_KEY)
         setAxiosToken(null)
         tokenRef.current = null

@@ -2,11 +2,21 @@ import { useState, useCallback, useEffect } from 'react'
 import axios from 'axios'
 import { useToast } from './useToast'
 
+export type OperationType = 'remove_bg' | 'enhance' | 'replace_bg' | 'smart_crop'
+
 export interface HistoryItem {
   upload_id:       string
   original_name:   string
   output_filename: string
   created_at:      string
+  operation_type:  OperationType
+}
+
+export const OPERATION_LABELS: Record<OperationType, string> = {
+  remove_bg:   'Remove BG',
+  enhance:     'Enhanced',
+  replace_bg:  'Replaced BG',
+  smart_crop:  'Smart Crop',
 }
 
 export function useHistory() {
@@ -19,7 +29,7 @@ export function useHistory() {
     setLoading(true)
     setError(null)
     try {
-      const res = await axios.get<HistoryItem[]>('/api/history')
+      const res = await axios.get<HistoryItem[]>('/api/history/all')
       setItems(res.data)
     } catch {
       setError('Could not load history.')
