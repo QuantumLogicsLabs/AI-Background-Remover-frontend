@@ -50,10 +50,19 @@ export default function RegisterPage() {
     } catch (err) {
       let msg = 'Registration failed. Please try again.'
       if (axios.isAxiosError(err)) {
-        if (err.response?.data?.detail) {
-          msg = String(err.response.data.detail)
+        const data = err.response?.data
+        if (typeof data === 'object' && data !== null) {
+          if (typeof data.detail === 'string') {
+            msg = data.detail
+          } else if (Array.isArray(data.detail)) {
+            msg = data.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ')
+          }
+        } else if (typeof data === 'string' && (data.includes('ECONNREFUSED') || data.includes('Internal Server Error'))) {
+          msg = 'Cannot reach backend server. Make sure the backend is running on port 8000.'
         } else if (err.code === 'ERR_NETWORK' || !err.response) {
           msg = 'Cannot reach the server. Make sure the backend is running on port 8000.'
+        } else if (err.response?.status && err.response.status >= 500) {
+          msg = 'Server error. Please ensure the backend is running and try again.'
         }
       }
       showToast(msg, 'error')
