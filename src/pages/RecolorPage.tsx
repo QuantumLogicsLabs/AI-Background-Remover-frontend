@@ -13,6 +13,7 @@ import { useRef, useCallback, useEffect } from 'react'
 import UploadZone from '../components/UploadZone'
 import DownloadButton from '../components/DownloadButton'
 import RecolorCanvas, { type RecolorCanvasHandle } from '../components/RecolorCanvas'
+import CanvasErrorBoundary from '../components/CanvasErrorBoundary'
 import SendToMenu from '../components/SendToMenu'
 import { useRecolor, COLOR_PRESETS } from '../hooks/useRecolor'
 import { useActiveImage } from '../contexts/ActiveImageContext'
@@ -249,13 +250,15 @@ export default function RecolorPage() {
                 </button>
               </div>
 
-              <RecolorCanvas
+              <CanvasErrorBoundary name="Recolor Canvas">
+                <RecolorCanvas
                 ref={canvasRef}
                 imageUrl={originalUrl}
                 brushSize={brush.size}
                 brushColor={brush.color}
                 disabled={isProcessing}
-              />
+                />
+              </CanvasErrorBoundary>
             </div>
           )}
 
