@@ -6,7 +6,7 @@ import ZipExportModal from '../components/ZipExportModal'
 import CircularProgress from '../components/CircularProgress'
 import { useBatch, ZipFormat } from '../hooks/useBatch'
 
-const MAX_FILES = 30
+const MAX_FILES = 100
 const MAX_SIZE_MB = 15
 const ACCEPTED = {
   'image/jpeg': ['.jpg', '.jpeg'],
@@ -129,13 +129,14 @@ export default function BatchPage() {
     isZipping,
     zipError,
     reset,
+    thumbnails,
   } = useBatch()
 
   const [zipModalOpen, setZipModalOpen] = useState(false)
 
   const handleDownloadZip = useCallback(
-    (format: ZipFormat, q: number) => {
-      downloadZip(format, q)
+    (format: ZipFormat, q: number, nameTemplate: string, bgColor: string) => {
+      downloadZip(format, q, nameTemplate, bgColor)
     },
     [downloadZip]
   )
@@ -273,7 +274,7 @@ export default function BatchPage() {
           </div>
 
           {/* Per File List */}
-          <BatchFileList files={job.files} />
+          <BatchFileList files={job.files} thumbnails={thumbnails} />
         </div>
       )}
 

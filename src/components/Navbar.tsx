@@ -22,8 +22,9 @@ const NAV_ITEMS = [
   },
   {
     to: '/recolor-and-eraser', label: 'Recolor & Eraser', end: false,
-    icon: (<span className="w-3.5 h-3.5 shrink-0 text-base leading-none">🎨</span>),
+    icon: (<span className="w-3.5 h-3.5 shrink-0 text-base leading-none">✨</span>),
   },
+
   {
     to: '/smart-crop', label: 'Smart Crop', end: false,
     icon: (<span className="w-3.5 h-3.5 shrink-0 text-base leading-none">🔲</span>),
