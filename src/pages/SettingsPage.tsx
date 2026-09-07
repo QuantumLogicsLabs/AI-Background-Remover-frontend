@@ -836,15 +836,11 @@ export default function SettingsPage() {
   const [tab, setTab] = useState<Tab>('appearance')
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'appearance', label: 'Appearance & Themes' },
-    { id: 'performance', label: 'Client Compression' },
-    { id: 'dashboard', label: 'Usage & Quotas' },
-    { id: 'analytics', label: 'Analytics' },
-    { id: 'brandkit', label: 'Brand Kit' },
-    { id: 'shortcuts', label: 'Shortcuts' },
-    { id: 'profile', label: 'Profile' },
-    { id: 'security', label: 'Security' },
-    { id: 'danger', label: 'Danger Zone' },
+    { id: 'appearance', label: 'Appearance' },
+    { id: 'profile',    label: 'Profile' },
+    { id: 'security',   label: 'Security' },
+    { id: 'shortcuts',  label: 'Shortcuts' },
+    { id: 'danger',     label: 'Danger Zone' },
   ]
 
   return (

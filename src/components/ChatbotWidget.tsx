@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import DOMPurify from 'dompurify'
-import type { Message, ChatResponse, ImageAnalysis, CaptionStyle, PromptTemplate } from '../types'
+import type { Message, ChatResponse, ImageAnalysis, CaptionStyle } from '../types'
 import { chatService } from '../services/chatService'
-import { promptService } from '../services/promptService'
 import { favoriteService } from '../services/favoriteService'
 import { imageService } from '../services/imageService'
 import { useActiveImage } from '../contexts/ActiveImageContext'
@@ -10,7 +9,7 @@ import { useLocation } from 'react-router-dom'
 
 // ─── Mode Types ───────────────────────────────────────────────────────────────
 
-type Mode = 'chat' | 'analysis' | 'suggestions' | 'captions' | 'prompts'
+type Mode = 'chat' | 'analysis' | 'suggestions' | 'captions'
 
 type Position = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
 
@@ -513,15 +512,6 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
   const [pendingChatMessage, setPendingChatMessage] = useState<string | null>(null)
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [templates, setTemplates] = useState<PromptTemplate[]>([])
-  const [templatesLoading, setTemplatesLoading] = useState(false)
-  const [showTemplates, setShowTemplates] = useState(false)
-  // Prompts tab create-form state
-  const [promptTitle, setPromptTitle] = useState('')
-  const [promptText, setPromptText] = useState('')
-  const [promptTags, setPromptTags] = useState('')
-  const [promptSaving, setPromptSaving] = useState(false)
-  const [promptCopiedId, setPromptCopiedId] = useState<string | null>(null)
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set())
   const [showBatch, setShowBatch] = useState(false)
   const [batchFiles, setBatchFiles] = useState<File[]>([])
@@ -547,23 +537,12 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
   const [selectedCaption, setSelectedCaption] = useState<number | null>(null)
   const [copiedCaption, setCopiedCaption] = useState<number | null>(null)
 
-  const fetchTemplates = useCallback(async () => {
-    if (templatesLoading) return
-    setTemplatesLoading(true)
-    try {
-      const data = await promptService.list()
-      setTemplates(data)
-    } catch { /* ignore */ }
-    finally { setTemplatesLoading(false) }
-  }, [templatesLoading])
-
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, chatLoading])
 
   useEffect(() => {
     if (isOpen && mode === 'chat') setTimeout(() => chatInputRef.current?.focus(), 150)
-    if (isOpen && mode === 'prompts' && templates.length === 0) fetchTemplates()
     if (isOpen) setUnread(0)
-  }, [isOpen, mode, templates.length, fetchTemplates])
+  }, [isOpen, mode])
 
   useEffect(() => {
     if (contextFile) { setInternalFile(null); setInternalPreviewUrl(null) }
@@ -690,37 +669,6 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
 
   const handleResendMessage = (content: string) => sendChat(content)
 
-  const toggleTemplates = () => {
-    const next = !showTemplates
-    setShowTemplates(next)
-    if (next && templates.length === 0) fetchTemplates()
-  }
-
-  const handleUseTemplate = async (t: PromptTemplate) => {
-    setChatInput(t.prompt_text.slice(0, MAX_CHARS))
-    setShowTemplates(false)
-    chatInputRef.current?.focus()
-    try { await promptService.use(t.template_id) } catch { /* ignore */ }
-  }
-
-  const handleSaveTemplate = async () => {
-    const text = chatInput.trim()
-    if (!text) return
-    const title = window.prompt('Template title:', text.slice(0, 40))
-    if (!title) return
-    try {
-      const t = await promptService.create(title, text)
-      setTemplates(prev => [t, ...prev])
-    } catch { /* ignore */ }
-  }
-
-  const handleDeleteTemplate = async (id: string) => {
-    try {
-      await promptService.remove(id)
-      setTemplates(prev => prev.filter(t => t.template_id !== id))
-    } catch { /* ignore */ }
-  }
-
   const runAnalysis = async () => {
     if (!activeFile || analysisLoading) return
     setAnalysisLoading(true); setAnalysisError(null); setAnalysis(null)
@@ -782,34 +730,11 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
     { id: 'analysis', label: 'Analyze', color: 'emerald', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
     { id: 'suggestions', label: 'Suggest', color: 'amber', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg> },
     { id: 'captions', label: 'Caption', color: 'violet', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg> },
-    { id: 'prompts', label: 'Prompts', color: 'rose', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg> },
   ]
 
   const charCount = chatInput.length
   const charPct = charCount / MAX_CHARS
   const charColor = charPct >= 1 ? 'text-danger' : charPct >= 0.9 ? 'text-amber-500' : 'text-muted'
-
-  const handleCreateTemplate = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!promptTitle.trim() || !promptText.trim()) return
-    setPromptSaving(true)
-    try {
-      const tagList = promptTags.split(',').map(t => t.trim()).filter(Boolean)
-      const t = await promptService.create(promptTitle.trim(), promptText.trim(), tagList)
-      setTemplates(prev => [t, ...prev])
-      setPromptTitle('')
-      setPromptText('')
-      setPromptTags('')
-    } catch { /* ignore */ }
-    finally { setPromptSaving(false) }
-  }
-
-  const handleUseAndCopyTemplate = async (t: PromptTemplate) => {
-    await navigator.clipboard.writeText(t.prompt_text)
-    setPromptCopiedId(t.template_id)
-    setTimeout(() => setPromptCopiedId(null), 1800)
-    try { await promptService.use(t.template_id) } catch { /* ignore */ }
-  }
 
   const renderModeContent = () => {
     if (mode === 'chat') {
@@ -897,30 +822,6 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
             <div ref={bottomRef} />
           </div>
           <div className="border-t border-border bg-surface-raised p-2.5 flex flex-col gap-1.5 shrink-0">
-            {showTemplates && (
-              <div className="rounded-xl border border-border bg-surface p-2 max-h-40 overflow-y-auto space-y-1">
-                {templatesLoading && <p className="text-[10px] text-muted px-1">Loading...</p>}
-                {!templatesLoading && templates.length === 0 && (
-                  <p className="text-[10px] text-muted px-1">No saved templates yet.</p>
-                )}
-                {templates.map(t => (
-                  <div key={t.template_id} className="flex items-center gap-2 group">
-                    <button onClick={() => handleUseTemplate(t)}
-                      className="flex-1 text-left px-2 py-1 rounded-lg text-[11px] text-secondary hover:text-primary hover:bg-surface-raised transition-all truncate">
-                      {t.title}
-                    </button>
-                    <button onClick={() => handleDeleteTemplate(t.template_id)} title="Delete"
-                      className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger transition-all shrink-0 px-1">
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                  </div>
-                ))}
-                <button onClick={handleSaveTemplate} disabled={!chatInput.trim()}
-                  className="w-full text-left px-2 py-1 rounded-lg text-[10px] font-semibold text-magenta hover:bg-magenta/5 transition-all disabled:opacity-30">
-                  + Save current input as template
-                </button>
-              </div>
-            )}
             <div className="flex gap-2 items-end">
               {messages.length > 0 && (
                 <button onClick={() => { setMessages([]); setChatError(null); setPendingChatMessage(null); setEditingId(null) }} title="Clear"
@@ -933,10 +834,6 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
               </button>
               <input ref={chatFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleChatFileSelected} />
-              <button onClick={toggleTemplates} title="Prompt templates"
-                className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all mb-[1px] shrink-0 ${showTemplates ? 'text-magenta bg-magenta/10' : 'text-muted hover:text-magenta hover:bg-magenta/10'}`}>
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-              </button>
               <textarea ref={chatInputRef} value={chatInput}
                 onChange={e => setChatInput(e.target.value.slice(0, MAX_CHARS))}
                 onKeyDown={handleChatKey}
@@ -1090,102 +987,6 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
                 <p className="text-[11px] text-muted text-center">{activeFile ? 'Pick a style and generate captions.' : 'Upload an image to get started.'}</p>
               </div>
             )}
-          </div>
-        </div>
-      )
-    }
-
-    if (mode === 'prompts') {
-      return (
-        <div className="flex flex-col flex-1 overflow-hidden">
-          {/* Create form */}
-          <div className="p-3 border-b border-border bg-surface-raised shrink-0">
-            <form onSubmit={handleCreateTemplate} className="flex flex-col gap-2">
-              <input
-                type="text"
-                placeholder="Template title…"
-                value={promptTitle}
-                onChange={e => setPromptTitle(e.target.value)}
-                maxLength={120}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-[12px] text-primary placeholder-muted focus:outline-none focus:border-magenta focus:ring-1 focus:ring-magenta/30 transition-all"
-              />
-              <textarea
-                placeholder="Prompt text…"
-                value={promptText}
-                onChange={e => setPromptText(e.target.value)}
-                rows={2}
-                maxLength={4000}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-[12px] text-primary placeholder-muted focus:outline-none focus:border-magenta focus:ring-1 focus:ring-magenta/30 transition-all resize-none"
-              />
-              <input
-                type="text"
-                placeholder="Tags, comma separated"
-                value={promptTags}
-                onChange={e => setPromptTags(e.target.value)}
-                className="w-full rounded-lg border border-border bg-surface px-3 py-1.5 text-[12px] text-primary placeholder-muted focus:outline-none focus:border-magenta focus:ring-1 focus:ring-magenta/30 transition-all"
-              />
-              <button
-                type="submit"
-                disabled={promptSaving || !promptTitle.trim() || !promptText.trim()}
-                className="w-full py-1.5 rounded-lg bg-magenta hover:bg-magenta/90 text-[11px] font-bold text-white transition-all active:scale-95 disabled:opacity-30"
-              >
-                {promptSaving ? 'Saving…' : '+ Save Template'}
-              </button>
-            </form>
-          </div>
-
-          {/* Template list */}
-          <div className="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-none">
-            {templatesLoading && (
-              <p className="text-[10px] text-muted text-center py-4">Loading templates…</p>
-            )}
-            {!templatesLoading && templates.length === 0 && (
-              <div className="h-full flex flex-col items-center justify-center text-center py-8">
-                <p className="text-[11px] font-bold text-primary">No templates yet</p>
-                <p className="text-[10px] text-muted mt-1">Save your first prompt above to reuse it later.</p>
-              </div>
-            )}
-            {templates.map(t => (
-              <div key={t.template_id} className="rounded-xl border border-border bg-surface p-3 flex flex-col gap-2">
-                <div className="flex items-start justify-between gap-2">
-                  <p className="text-[12px] font-semibold text-primary leading-snug">{t.title}</p>
-                  <button
-                    onClick={() => handleDeleteTemplate(t.template_id)}
-                    className="text-[10px] text-muted hover:text-danger transition-colors shrink-0"
-                    aria-label={`Delete ${t.title}`}
-                  >
-                    Delete
-                  </button>
-                </div>
-                <p className="text-[11px] text-secondary line-clamp-2 leading-relaxed">{t.prompt_text}</p>
-                {t.tags.length > 0 && (
-                  <div className="flex flex-wrap gap-1">
-                    {t.tags.map(tag => (
-                      <span key={tag} className="text-[9px] px-1.5 py-0.5 rounded-full bg-teal/10 text-teal border border-teal/20">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                <div className="flex items-center justify-between mt-0.5">
-                  <span className="text-[9.5px] text-muted">Used {t.use_count} time{t.use_count !== 1 ? 's' : ''}</span>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => { setChatInput(t.prompt_text.slice(0, MAX_CHARS)); setMode('chat'); setTimeout(() => chatInputRef.current?.focus(), 50) }}
-                      className="text-[10px] font-semibold text-magenta hover:underline transition-all"
-                    >
-                      Use in Chat
-                    </button>
-                    <button
-                      onClick={() => handleUseAndCopyTemplate(t)}
-                      className="text-[10px] font-semibold text-teal hover:underline transition-all"
-                    >
-                      {promptCopiedId === t.template_id ? 'Copied!' : 'Copy'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
           </div>
         </div>
       )

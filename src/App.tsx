@@ -1,5 +1,5 @@
 import { lazy, Suspense } from 'react'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './hooks/useAuth'
 import { ActiveImageProvider } from './contexts/ActiveImageContext'
@@ -48,11 +48,16 @@ function ChatbotWidgetWrapper() {
 
 function MainLayout() {
   const { user } = useAuth()
+  const location = useLocation()
   useKeyboardShortcuts()
+
+  // Auth pages that should not show the navbar
+  const authPages = ['/login', '/register', '/forgot-password', '/reset-password']
+  const isAuthPage = authPages.includes(location.pathname)
 
   return (
     <div className="min-h-screen bg-page flex flex-col selection:bg-magenta selection:text-white">
-      <Navbar />
+      {!isAuthPage && <Navbar />}
       <div className="flex-1 flex w-full">
         <main className="flex-1 min-w-0 pb-16 md:pb-6">
           <Suspense fallback={<PageLoader />}>
@@ -82,7 +87,7 @@ function MainLayout() {
         </main>
       </div>
 
-      {user && <BottomNav />}
+      {user && !isAuthPage && <BottomNav />}
       <ShortcutsModal />
       <ChatbotWidgetWrapper />
     </div>

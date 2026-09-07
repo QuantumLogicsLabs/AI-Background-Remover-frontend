@@ -228,7 +228,6 @@ A floating AI assistant (`src/components/ChatbotWidget.tsx`) available on every 
 |------|---------|
 | `src/services/chatService.ts` | `POST /api/chat` |
 | `src/services/imageService.ts` | `POST /api/image/analyze`, `/captions`, `/suggestions` |
-| `src/services/promptService.ts` | Template library CRUD |
 | `src/services/favoriteService.ts` | Favorites CRUD |
 
 ---
