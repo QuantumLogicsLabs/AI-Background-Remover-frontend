@@ -116,7 +116,6 @@ function DashboardTab() {
   }
 
   const createdDate = user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'
-  const quotaPercent = stats?.quota?.limit > 0 ? (stats.quota.used / stats.quota.limit) * 100 : 0
 
   return (
     <div className="flex flex-col gap-8 animate-fade-up">
@@ -128,21 +127,6 @@ function DashboardTab() {
           <h2 className="text-lg font-bold text-primary">{user?.name}</h2>
           <p className="text-sm text-secondary">{user?.email}</p>
           <p className="text-xs text-muted mt-1">Member since {createdDate}</p>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <div className="flex justify-between items-end">
-          <h3 className="text-sm font-semibold text-primary">Daily Quota</h3>
-          <span className="text-xs text-muted font-medium">
-            {stats?.quota?.used} / {stats?.quota?.limit} images used
-          </span>
-        </div>
-        <div className="h-2.5 w-full bg-surface-raised rounded-full overflow-hidden border border-border">
-          <div
-            className="h-full bg-gradient-to-r from-teal to-magenta transition-all duration-500 ease-out"
-            style={{ width: `${Math.min(quotaPercent, 100)}%` }}
-          />
         </div>
       </div>
 

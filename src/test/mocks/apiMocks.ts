@@ -51,10 +51,3 @@ export const mockBatchStatusResponse = {
     },
   ],
 }
-
-export const mockQuotaResponse = {
-  used: 5,
-  limit: 100,
-  remaining: 95,
-  disabled: false,
-}
