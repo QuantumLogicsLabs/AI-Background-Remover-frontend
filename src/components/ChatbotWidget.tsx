@@ -68,7 +68,7 @@ function buildHistoryContext(messages: Message[], maxTurns: number = 3): string 
 
 // ─── Error Types ───────────────────────────────────────────────────────────────
 
-type ErrorType = 'auth' | 'rate_limit' | 'timeout' | 'quota' | 'network' | 'generic'
+type ErrorType = 'auth' | 'rate_limit' | 'timeout' | 'network' | 'generic'
 
 interface ErrorInfo {
   type: ErrorType
@@ -116,14 +116,6 @@ const getErrorInfo = (error: any): ErrorInfo => {
       timestamp: Date.now()
     }
   }
-  if (lowerMessage.includes('quota')) {
-    return {
-      type: 'quota',
-      message: 'AI service quota exceeded. Please check your plan and usage.',
-      retryable: false,
-      timestamp: Date.now()
-    }
-  }
   if (lowerMessage.includes('network') || lowerMessage.includes('connection')) {
     return {
       type: 'network',
@@ -150,8 +142,6 @@ const ErrorDisplay: React.FC<{ error: ErrorInfo; onRetry?: () => void; onDismiss
         return <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
       case 'timeout':
         return <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-      case 'quota':
-        return <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
       case 'network':
         return <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" /></svg>
       default:

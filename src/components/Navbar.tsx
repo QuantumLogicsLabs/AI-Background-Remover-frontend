@@ -4,7 +4,6 @@ import ThemeToggle from './ThemeToggle'
 import { useAuth } from '../hooks/useAuth'
 import { useThemeSettings, AccentTheme } from '../contexts/ThemeSettingsContext'
 import Tooltip from './Tooltip'
-import axios from 'axios'
 
 // ── Nav item definitions ───────────────────────────────────────────────────
 const NAV_ITEMS = [
@@ -76,44 +75,11 @@ function AppNavLink({ to, label, end, icon }: { to: string; label: string; end?:
   )
 }
 
-function QuotaBar({ refreshKey }: { refreshKey: number }) {
-  const [quota, setQuota] = useState<{ used: number; limit: number; disabled: boolean } | null>(null)
-
-  useEffect(() => {
-    axios.get('/api/auth/quota')
-      .then(r => setQuota(r.data))
-      .catch(() => {})
-  }, [refreshKey])
-
-  if (!quota || quota.disabled || quota.limit === 0) return null
-
-  const pct = Math.min(100, Math.round((quota.used / quota.limit) * 100))
-  const color = pct >= 90 ? 'bg-danger' : pct >= 70 ? 'bg-warning' : 'bg-success'
-
-  return (
-    <div className="px-4 py-2.5 border-b border-border bg-surface-raised">
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[11px] text-muted font-medium">Daily AI Quota</span>
-        <span className="text-xs font-mono font-medium text-secondary">
-          {quota.used} <span className="text-muted">/ {quota.limit}</span>
-        </span>
-      </div>
-      <div className="h-1.5 w-full rounded-full bg-border overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${color}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
-  )
-}
-
 function UserMenu() {
   const { user, logout } = useAuth()
   const { accent, setAccent } = useThemeSettings()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const [quotaKey, setQuotaKey] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -131,11 +97,7 @@ function UserMenu() {
   const initial = user.name ? user.name.charAt(0).toUpperCase() : 'U'
 
   function toggleOpen() {
-    setOpen(v => {
-      const next = !v
-      if (next) setQuotaKey(k => k + 1)
-      return next
-    })
+    setOpen(v => !v)
   }
 
   const ACCENTS: { id: AccentTheme; label: string; color: string }[] = [
@@ -184,8 +146,6 @@ function UserMenu() {
               <p className="text-xs text-muted truncate">{user.email}</p>
             </div>
           </div>
-
-          <QuotaBar refreshKey={quotaKey} />
 
           {/* Quick Accent Switcher */}
           <div className="p-3 border-b border-border">
