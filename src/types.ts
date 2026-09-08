@@ -14,6 +14,17 @@ export interface ChatResponse {
   reply: string
   thinking?: string | null
   action?: any
+  conversation_id: string
+}
+
+export interface ChatHistoryMessage {
+  role: 'user' | 'assistant'
+  content: string
+}
+
+export interface ChatHistoryResponse {
+  conversation_id: string
+  messages: ChatHistoryMessage[]
 }
 
 // ── Image Analysis ───────────────────────────────────────────────────────────

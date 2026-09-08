@@ -465,6 +465,8 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
   const activePreviewUrl = contextPreviewUrl ?? internalPreviewUrl
 
   const [messages, setMessages] = useState<Message[]>([])
+  const [conversationId, setConversationId] = useState<string | null>(null)
+  const [historyLoaded, setHistoryLoaded] = useState(false)
   const location = useLocation()
   const currentPath = location.pathname
 
@@ -531,6 +533,26 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
     if (isOpen) setUnread(0)
   }, [isOpen, mode])
 
+  // Fetch persisted conversation once, the first time the widget is opened.
+  useEffect(() => {
+    if (!isOpen || historyLoaded) return
+    setHistoryLoaded(true)
+    chatService.getHistory()
+      .then(res => {
+        setConversationId(res.conversation_id)
+        if (res.messages.length > 0) {
+          const restored: Message[] = res.messages.map((m, i) => ({
+            id: `restored-${i}-${Date.now()}`,
+            role: m.role,
+            content: m.content,
+            timestamp: Date.now(),
+          }))
+          setMessages(restored)
+        }
+      })
+      .catch(() => { /* best-effort: chat still works without restored history */ })
+  }, [isOpen, historyLoaded])
+
   useEffect(() => {
     if (contextFile) { setInternalFile(null); setInternalPreviewUrl(null) }
   }, [contextFile])
@@ -571,7 +593,9 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
     try {
       const routeContext = getPromptContextForPath(currentPath)
       const combinedText = `${routeContext}\n\n${historyContext}User Message (intent: ${intent}): ${text}`
-      const res: ChatResponse = await chatService.sendMessage(combinedText, activeFile)
+      const backendHistory = messages.slice(-10).map(m => ({ role: m.role, content: m.content }))
+      const res: ChatResponse = await chatService.sendMessage(combinedText, activeFile, conversationId, backendHistory)
+      setConversationId(res.conversation_id)
       const aiMsg: Message = { id: Date.now() + '-a', role: 'assistant', content: res.reply, thinking: res.thinking, timestamp: Date.now(), topic: detectTopic(res.reply) }
       setMessages(prev => [...prev, aiMsg])
       if (!isOpen) setUnread(n => n + 1)
@@ -584,6 +608,15 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
   }
 
   const retryChat = () => { if (pendingChatMessage) sendChat(pendingChatMessage) }
+  const handleClearConversation = async () => {
+    try {
+      await chatService.clearHistory(conversationId)
+    } catch { /* best-effort */ }
+    setMessages([])
+    setConversationId(null)
+    setChatError(null)
+    setPendingChatMessage(null)
+  }
 
   const handleChatKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat() }
@@ -1166,6 +1199,10 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
                     <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 5h16M4 12h16M4 19h16" /></svg>
                   </button>
                 )}
+                <button onClick={handleClearConversation} title="Clear conversation"
+                  className="w-7 h-7 rounded-lg flex items-center justify-center text-secondary hover:text-danger hover:bg-danger/10 transition-all">
+                  <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                </button>
                 {activePreviewUrl && <img src={activePreviewUrl} alt="" className="w-8 h-8 rounded-lg object-cover border border-border opacity-80 mx-1" />}
                 <button onClick={() => setIsOpen(false)}
                   className="w-7 h-7 rounded-lg flex items-center justify-center text-secondary hover:text-primary hover:bg-surface transition-all">
