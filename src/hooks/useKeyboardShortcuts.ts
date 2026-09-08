@@ -14,7 +14,7 @@ export const SHORTCUT_LIST: ShortcutItem[] = [
   { key: '1', description: 'Go to Remove/Replace BG', category: 'Navigation' },
   { key: '2', description: 'Go to Enhance', category: 'Navigation' },
   { key: '3', description: 'Go to Shadow/Glow', category: 'Navigation' },
-  { key: '4', description: 'Go to Recolor', category: 'Navigation' },
+  { key: '4', description: 'Go to Recolor & Eraser', category: 'Navigation' },
   { key: '5', description: 'Go to Smart Crop', category: 'Navigation' },
   { key: '6', description: 'Go to Batch Processor', category: 'Navigation' },
   { key: '7', description: 'Go to History Gallery', category: 'Navigation' },
@@ -57,7 +57,7 @@ export function useKeyboardShortcuts() {
             navigate('/shadow');
             break;
           case '4':
-            navigate('/recolor');
+            navigate('/recolor-and-eraser');
             break;
           case '5':
             navigate('/smart-crop');

@@ -50,9 +50,7 @@ export function useUpload() {
     let attempt = 0
     while (attempt <= MAX_RETRIES) {
       try {
-        const response = await apiClient.post<UploadResult>('/api/remove-background', formData, {
-          headers: { 'Content-Type': 'multipart/form-data' },
-        })
+        const response = await apiClient.post<UploadResult>('/api/remove-background', formData)
         setResult(response.data)
         setStatus('success')
         setIsRetrying(false)

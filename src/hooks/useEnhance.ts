@@ -84,7 +84,6 @@ export function useEnhance() {
       const response = await axios.post<EnhanceResult>(
         '/api/enhance',
         buildFormData(file, s),
-        { headers: { 'Content-Type': 'multipart/form-data' } },
       )
       setResult(response.data)
       setStatus('success')

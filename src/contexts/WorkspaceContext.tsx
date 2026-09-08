@@ -54,9 +54,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-    } catch (e) {
-      console.error('Failed to parse saved projects', e);
-    }
+      } catch (_err) {
+        // localStorage value is corrupt — fall back to default project
+      }
     return [DEFAULT_PROJECT];
   });
 

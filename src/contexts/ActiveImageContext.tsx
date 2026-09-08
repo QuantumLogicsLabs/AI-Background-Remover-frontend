@@ -110,8 +110,8 @@ function ActiveImageProviderInner({ children }: { children: ReactNode }) {
 
         // Navigate — destination page reads activeFile on mount
         navigate(route)
-      } catch (err) {
-        console.error('[ActiveImageContext] sendToTool failed:', err)
+      } catch (_err) {
+        // Navigation failed — isSending resets in finally, user stays on current page
       } finally {
         setIsSending(false)
       }

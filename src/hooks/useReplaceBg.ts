@@ -102,7 +102,6 @@ export function useReplaceBg() {
       const res = await axios.post<RemoveResult>(
         '/api/remove-background',
         formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
       )
       setRemoveResult(res.data)
       setRemovedUrl(`/api/download/${res.data.output_filename}`)
@@ -164,7 +163,6 @@ export function useReplaceBg() {
       const res = await axios.post<ReplaceResult>(
         '/api/replace-background',
         formData,
-        { headers: { 'Content-Type': 'multipart/form-data' } },
       )
       setReplaceResult(res.data)
       setReplaceStatus('done')

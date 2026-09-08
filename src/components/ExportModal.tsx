@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, useCallback } from 'react'
 import { createPortal } from 'react-dom'
+import { useBrandKit } from '../contexts/BrandKitContext'
 
 // ── Types ──────────────────────────────────────────────────────────────────
 
@@ -47,7 +48,8 @@ function estimateSize(format: ExportFormat, quality: number): string {
 // ── ExportModal ────────────────────────────────────────────────────────────
 
 export default function ExportModal({ downloadUrl, filename, isOpen, onClose }: ExportModalProps) {
-  const [format,  setFormat]  = useState<ExportFormat>('png')
+  const { brandKit } = useBrandKit();
+  const [format,  setFormat]  = useState<ExportFormat>(brandKit.defaultExportFormat || 'png')
   const [quality, setQuality] = useState(DEFAULT_QUALITY)
 
   const modalRef = useRef<HTMLDivElement>(null)
@@ -57,7 +59,7 @@ export default function ExportModal({ downloadUrl, filename, isOpen, onClose }: 
   // Reset when opening
   useEffect(() => {
     if (isOpen) {
-      setFormat('png')
+      setFormat(brandKit.defaultExportFormat || 'png')
       setQuality(DEFAULT_QUALITY)
       setTimeout(() => closeRef.current?.focus(), 50)
     }
@@ -94,6 +96,104 @@ export default function ExportModal({ downloadUrl, filename, isOpen, onClose }: 
     if (format !== 'png') p.set('quality', String(quality))
     return `${base}?${p}`
   }, [downloadUrl, format, quality])
+
+  
+  const handleDownload = async (e: React.MouseEvent) => {
+    if (!brandKit.watermark.enabled) return; // let default href work
+    
+    e.preventDefault();
+    const url = buildUrl();
+    const finalFilename = buildFilename();
+    
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = url;
+      await new Promise((resolve, reject) => {
+        img.onload = resolve;
+        img.onerror = reject;
+      });
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = img.width;
+      canvas.height = img.height;
+      const ctx = canvas.getContext('2d')!;
+      
+      ctx.drawImage(img, 0, 0);
+      
+      ctx.globalAlpha = brandKit.watermark.opacity;
+      
+      const margin = Math.min(canvas.width, canvas.height) * 0.05;
+      
+      if (brandKit.watermark.type === 'image' && brandKit.watermark.image) {
+        const wmImg = new Image();
+        wmImg.src = brandKit.watermark.image;
+        await new Promise((resolve) => { wmImg.onload = resolve; });
+        
+        // Scale watermark to max 20% of image size
+        const scale = (Math.min(canvas.width, canvas.height) * 0.2) / Math.max(wmImg.width, wmImg.height);
+        const w = wmImg.width * scale;
+        const h = wmImg.height * scale;
+        
+        let x = canvas.width - w - margin;
+        let y = canvas.height - h - margin;
+        
+        if (brandKit.watermark.position.includes('left')) x = margin;
+        if (brandKit.watermark.position.includes('top')) y = margin;
+        if (brandKit.watermark.position === 'center') {
+          x = (canvas.width - w) / 2;
+          y = (canvas.height - h) / 2;
+        }
+        
+        ctx.drawImage(wmImg, x, y, w, h);
+      } else if (brandKit.watermark.type === 'text' && brandKit.watermark.text) {
+        const fontSize = Math.max(16, Math.min(canvas.width, canvas.height) * 0.05);
+        ctx.font = `bold ${fontSize}px sans-serif`;
+        ctx.fillStyle = 'white';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'bottom';
+        
+        let x = canvas.width - margin;
+        let y = canvas.height - margin;
+        
+        if (brandKit.watermark.position.includes('left')) {
+          ctx.textAlign = 'left';
+          x = margin;
+        }
+        if (brandKit.watermark.position.includes('top')) {
+          ctx.textBaseline = 'top';
+          y = margin;
+        }
+        if (brandKit.watermark.position === 'center') {
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          x = canvas.width / 2;
+          y = canvas.height / 2;
+        }
+        
+        ctx.shadowColor = "rgba(0,0,0,0.8)";
+        ctx.shadowBlur = 4;
+        ctx.fillText(brandKit.watermark.text, x, y);
+      }
+      
+      const mimeType = format === 'jpeg' ? 'image/jpeg' : format === 'webp' ? 'image/webp' : 'image/png';
+      const q = format === 'png' ? undefined : quality / 100;
+      
+      const blobUrl = canvas.toDataURL(mimeType, q);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = finalFilename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      
+      onClose();
+    } catch (_err) {
+      // Watermark canvas failed — fall back to direct download
+      window.location.href = url;
+      onClose();
+    }
+  };
 
   const buildFilename = () => {
     const exts: Record<ExportFormat, string> = { png: '.png', jpeg: '.jpg', webp: '.webp' }
@@ -140,7 +240,7 @@ export default function ExportModal({ downloadUrl, filename, isOpen, onClose }: 
           </div>
           <button
             ref={closeRef}
-            onClick={onClose}
+            onClick={(e) => { if (brandKit.watermark.enabled) handleDownload(e); else onClose(); }}
             aria-label="Close export dialog"
             className="w-8 h-8 rounded-lg flex items-center justify-center text-muted hover:text-primary hover:bg-surface-raised transition-colors focus:outline-none focus:shadow-focus"
           >
@@ -258,7 +358,7 @@ export default function ExportModal({ downloadUrl, filename, isOpen, onClose }: 
             ref={dlRef}
             href={buildUrl()}
             download={buildFilename()}
-            onClick={onClose}
+            onClick={(e) => { if (brandKit.watermark.enabled) handleDownload(e); else onClose(); }}
             className="
               shrink-0 inline-flex items-center gap-2 px-6 py-2.5
               rounded-xl font-bold text-sm text-white

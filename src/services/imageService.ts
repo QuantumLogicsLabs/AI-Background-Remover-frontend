@@ -12,11 +12,9 @@ export const imageService = {
   async analyze(file: File): Promise<ImageAnalysis> {
     const formData = new FormData()
     formData.append('file', file)
-    const { data } = await apiClient.post<ImageAnalysis>('/api/image/analyze', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
+    // Do NOT set Content-Type manually — axios auto-sets multipart/form-data
+    // with the correct boundary. Overriding it drops the boundary.
+    const { data } = await apiClient.post<ImageAnalysis>('/api/image/analyze', formData)
     return data
   },
 
@@ -24,33 +22,21 @@ export const imageService = {
     const formData = new FormData()
     formData.append('file', file)
     formData.append('style', style)
-    const { data } = await apiClient.post<CaptionsResponse>('/api/image/captions', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
+    const { data } = await apiClient.post<CaptionsResponse>('/api/image/captions', formData)
     return data
   },
 
   async getSuggestions(file: File): Promise<BackgroundSuggestionsResponse> {
     const formData = new FormData()
     formData.append('file', file)
-    const { data } = await apiClient.post<BackgroundSuggestionsResponse>('/api/image/suggestions', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
+    const { data } = await apiClient.post<BackgroundSuggestionsResponse>('/api/image/suggestions', formData)
     return data
   },
 
   async analyzeAdvanced(file: File): Promise<AdvancedAnalysis> {
     const formData = new FormData()
     formData.append('file', file)
-    const { data } = await apiClient.post<AdvancedAnalysis>('/api/image/analyze-advanced', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
+    const { data } = await apiClient.post<AdvancedAnalysis>('/api/image/analyze-advanced', formData)
     return data
   },
 
@@ -59,11 +45,7 @@ export const imageService = {
     files.forEach(file => {
       formData.append('files', file)
     })
-    const { data } = await apiClient.post<BatchAdvancedAnalysisResponse>('/api/image/analyze-advanced-batch', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data',
-      },
-    })
+    const { data } = await apiClient.post<BatchAdvancedAnalysisResponse>('/api/image/analyze-advanced-batch', formData)
     return data
   },
 }

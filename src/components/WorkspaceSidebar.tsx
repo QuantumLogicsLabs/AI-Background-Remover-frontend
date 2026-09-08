@@ -217,25 +217,25 @@ export default function WorkspaceSidebar() {
           <span className="text-[10px] font-mono text-primary capitalize">{accent}</span>
         </div>
         <div className="flex items-center justify-between gap-1">
-          {(['gold', 'cyber', 'emerald', 'sapphire', 'sunset'] as const).map((th) => (
+          {(['gold', 'cyber', 'emerald', 'sapphire', 'sunset', 'rose', 'arctic', 'crimson', 'violet'] as const).map((th) => (
             <button
               key={th}
               type="button"
               onClick={() => setAccent(th)}
-              className={`w-6 h-6 rounded-full border transition-transform ${
+              className={`w-5 h-5 rounded-full border transition-transform ${
                 accent === th ? 'scale-125 ring-2 ring-magenta/50 border-white' : 'border-border hover:scale-110'
               }`}
               style={{
                 backgroundColor:
-                  th === 'gold'
-                    ? '#F59E0B'
-                    : th === 'cyber'
-                    ? '#EC4899'
-                    : th === 'emerald'
-                    ? '#10B981'
-                    : th === 'sapphire'
-                    ? '#3B82F6'
-                    : '#F97316',
+                  th === 'gold'     ? '#F59E0B'
+                  : th === 'cyber'  ? '#EC4899'
+                  : th === 'emerald'? '#10B981'
+                  : th === 'sapphire'?'#3B82F6'
+                  : th === 'rose'   ? '#FB7185'
+                  : th === 'arctic' ? '#22D3EE'
+                  : th === 'crimson'? '#EF4444'
+                  : th === 'violet' ? '#A855F7'
+                  : '#F97316',
               }}
               title={th}
             />

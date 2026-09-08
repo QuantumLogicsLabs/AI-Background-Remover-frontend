@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { subscribeToOnlineStatus } from '../services/pwaService';
 
-export type AccentTheme = 'gold' | 'cyber' | 'emerald' | 'sapphire' | 'sunset';
+export type AccentTheme = 'gold' | 'cyber' | 'emerald' | 'sapphire' | 'sunset' | 'rose' | 'arctic' | 'crimson' | 'violet';
 
 export interface ThemeSettingsState {
   accent: AccentTheme;

@@ -122,7 +122,6 @@ export function useRecolor() {
         const res = await apiClient.post<RecolorResult>(
           '/api/recolor',
           formData,
-          { headers: { 'Content-Type': 'multipart/form-data' } },
         )
         setResult(res.data)
         setStatus('done')

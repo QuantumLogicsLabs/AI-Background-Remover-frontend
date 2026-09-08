@@ -43,13 +43,14 @@ export default function ShadowPage() {
 
   // ── Pipeline handoff: auto-load if navigated via "Send to…" ────────────
   const { activeFile } = useActiveImage()
+  // Pipeline handoff: auto-load if navigated via "Send to…" — runs once on mount only
+  const didAutoUploadRef = useRef(false)
   useEffect(() => {
-    if (activeFile && status === 'idle') {
+    if (!didAutoUploadRef.current && activeFile && status === 'idle') {
+      didAutoUploadRef.current = true
       upload(activeFile)
     }
-    // Only run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [activeFile, status, upload])
 
   const isUploading = status === 'uploading'
   const isDone = status === 'success' && result !== null && originalUrl !== null

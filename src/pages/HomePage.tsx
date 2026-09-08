@@ -3,6 +3,7 @@ import axios from 'axios'
 import UploadZone from '../components/UploadZone'
 import ImageCanvas from '../components/ImageCanvas'
 import DownloadButton from '../components/DownloadButton'
+import DownloadSvgButton from '../components/DownloadSvgButton'
 import QualityToggle from '../components/QualityToggle'
 import BackgroundPicker from '../components/BackgroundPicker'
 import SendToMenu from '../components/SendToMenu'
@@ -157,13 +158,14 @@ export default function HomePage() {
     }
   }
 
-  // Auto-trigger when redirected with active image
+  // Auto-trigger when redirected with active image — runs once on mount only
+  const didAutoUploadRef = useRef(false)
   useEffect(() => {
-    if (activeFile && status === 'idle') {
+    if (!didAutoUploadRef.current && activeFile && status === 'idle') {
+      didAutoUploadRef.current = true
       upload(activeFile)
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [activeFile, status, upload])
 
   // Auto add to workspace project when upload completes
   useEffect(() => {
@@ -176,8 +178,7 @@ export default function HomePage() {
         operationType: 'remove_bg',
       })
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [status, result])
+  }, [status, result, addItemToProject, originalUrl])
 
   // Processing step timer
   const steps = quality === 'quality' ? QUALITY_STEPS : quality === 'standard' ? STANDARD_STEPS : FAST_STEPS
@@ -358,6 +359,11 @@ export default function HomePage() {
 
                 <SendToMenu excludeRoute="/" />
 
+                <DownloadSvgButton
+                  sourceUrl={refinedResultUrl || `/api/download/${result!.output_filename}`}
+                  filename={result!.output_filename}
+                />
+
                 <DownloadButton
                   downloadUrl={refinedResultUrl || `/api/download/${result!.output_filename}`}
                   filename={result!.output_filename}
@@ -451,3 +457,4 @@ export default function HomePage() {
     </main>
   )
 }
+

@@ -1,98 +1,43 @@
 import { useState, useRef, useEffect } from 'react'
-import { Link, NavLink, useNavigate } from 'react-router-dom'
+import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import ThemeToggle from './ThemeToggle'
 import { useAuth } from '../hooks/useAuth'
 import { useThemeSettings, AccentTheme } from '../contexts/ThemeSettingsContext'
 import Tooltip from './Tooltip'
-import axios from 'axios'
 
 // ── Nav item definitions ───────────────────────────────────────────────────
 const NAV_ITEMS = [
   {
-    to: '/', label: 'Remove/Replace BG', end: true,
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5 shrink-0" aria-hidden="true">
-        <path d="M8.75 2.75a.75.75 0 00-1.5 0v5.69L5.03 6.22a.75.75 0 00-1.06 1.06l3.5 3.5a.75.75 0 001.06 0l3.5-3.5a.75.75 0 00-1.06-1.06L8.75 8.44V2.75z" />
-        <path d="M3.5 9.75a.75.75 0 00-1.5 0v1.5A2.75 2.75 0 004.75 14h6.5A2.75 2.75 0 0014 11.25v-1.5a.75.75 0 00-1.5 0v1.5c0 .69-.56 1.25-1.25 1.25h-6.5c-.69 0-1.25-.56-1.25-1.25v-1.5z" />
-      </svg>
-    ),
+    to: '/', label: 'Remove BG', end: true,
+    icon: (<span className="text-sm leading-none">✂️</span>),
   },
   {
     to: '/enhance', label: 'Enhance', end: false,
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5 shrink-0" aria-hidden="true">
-        <path fillRule="evenodd" d="M8 1.5a.75.75 0 01.75.75v1a.75.75 0 01-1.5 0v-1A.75.75 0 018 1.5zM3.05 3.05a.75.75 0 011.06 0l.707.707A.75.75 0 113.757 4.82l-.707-.707a.75.75 0 010-1.062zm9.9 0a.75.75 0 010 1.06l-.706.708a.75.75 0 11-1.061-1.061l.707-.707a.75.75 0 011.06 0zM8 6a2 2 0 100 4A2 2 0 008 6zm-5.5 2a.75.75 0 000 1.5h1a.75.75 0 000-1.5h-1zm10 0a.75.75 0 000 1.5h1a.75.75 0 000-1.5h-1zm-2.136 3.728a.75.75 0 011.061 0l.707.707a.75.75 0 01-1.06 1.06l-.708-.706a.75.75 0 010-1.061zm-6.728 0a.75.75 0 010 1.06l-.707.708a.75.75 0 01-1.06-1.061l.707-.707a.75.75 0 011.06 0zM8 12.75a.75.75 0 01.75.75v1a.75.75 0 01-1.5 0v-1a.75.75 0 01.75-.75z" clipRule="evenodd" />
-      </svg>
-    ),
+    icon: (<span className="text-sm leading-none">✨</span>),
   },
   {
-    to: '/shadow', label: 'Shadow/Glow', end: false,
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5 shrink-0" aria-hidden="true">
-        <path fillRule="evenodd" d="M8 1a7 7 0 100 14A7 7 0 008 1zm3.844 4.574a.75.75 0 00-1.188-.918l-3.454 4.472-1.696-1.697a.75.75 0 00-1.06 1.06l2.25 2.25a.75.75 0 001.124-.096l4.024-5.07z" clipRule="evenodd" />
-      </svg>
-    ),
+    to: '/shadow', label: 'Shadow', end: false,
+    icon: (<span className="text-sm leading-none">💡</span>),
   },
   {
-    to: '/recolor', label: 'Recolor', end: false,
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5 shrink-0" aria-hidden="true">
-        <path fillRule="evenodd" d="M8 1a7 7 0 100 14A7 7 0 008 1zM5.5 8a2.5 2.5 0 115 0 2.5 2.5 0 01-5 0z" clipRule="evenodd" />
-      </svg>
-    ),
+    to: '/recolor-and-eraser', label: 'Recolor', end: false,
+    icon: (<span className="text-sm leading-none">🎨</span>),
   },
   {
-    to: '/magic-eraser', label: 'Magic Eraser', end: false,
-    icon: (<span className="w-3.5 h-3.5 shrink-0 text-base leading-none">✨</span>),
-  },
-  {
-    to: '/smart-crop', label: 'Smart Crop', end: false,
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5 shrink-0" aria-hidden="true">
-        <path fillRule="evenodd" d="M4.5 2a.75.75 0 01.75.75V4h5.25a2.75 2.75 0 012.75 2.75v5.25h1.25a.75.75 0 010 1.5H13v.25a.75.75 0 01-1.5 0V13H4.75A2.75 2.75 0 012 10.25V5a.75.75 0 010-1.5h.25V2.75A.75.75 0 014.5 2zM3.5 5v5.25c0 .69.56 1.25 1.25 1.25H11.5V6.75c0-.69-.56-1.25-1.25-1.25H3.5z" clipRule="evenodd" />
-      </svg>
-    ),
-  },
-  {
-    to: '/ai-analysis', label: 'AI Tools', end: false,
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5 shrink-0" aria-hidden="true">
-        <path fillRule="evenodd" d="M8 1.5A6.5 6.5 0 1014.5 8 6.5 6.5 0 008 1.5zm.75 3.5a.75.75 0 011.5 0v1.75a.75.75 0 01-1.5 0V5zm-3 0a.75.75 0 011.5 0v1.75a.75.75 0 01-1.5 0V5zM8 11.5a3.5 3.5 0 01-3.5-3.5h7A3.5 3.5 0 018 11.5z" clipRule="evenodd" />
-      </svg>
-    ),
+    to: '/smart-crop', label: 'Crop', end: false,
+    icon: (<span className="text-sm leading-none">🔲</span>),
   },
   {
     to: '/batch', label: 'Batch', end: false,
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5 shrink-0" aria-hidden="true">
-        <path d="M2 3.5A1.5 1.5 0 013.5 2h9A1.5 1.5 0 0114 3.5v2A1.5 1.5 0 0112.5 7h-9A1.5 1.5 0 012 5.5v-2zm1.5 0v2h9v-2h-9zM2 9.5A1.5 1.5 0 013.5 8h9A1.5 1.5 0 0114 9.5v2A1.5 1.5 0 0112.5 13h-9A1.5 1.5 0 012 11.5v-2zm1.5 0v2h9v-2h-9z" />
-      </svg>
-    ),
+    icon: (<span className="text-sm leading-none">📁</span>),
   },
   {
     to: '/history', label: 'History', end: false,
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5 shrink-0" aria-hidden="true">
-        <path fillRule="evenodd" d="M1 8a7 7 0 1114 0A7 7 0 011 8zm7.75-4.25a.75.75 0 00-1.5 0V8c0 .199.079.39.22.53l2.25 2.25a.75.75 0 101.06-1.06L8.75 7.94V3.75z" clipRule="evenodd" />
-      </svg>
-    ),
+    icon: (<span className="text-sm leading-none">🕐</span>),
   },
   {
-    to: '/prompts', label: 'Prompts', end: false,
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5 shrink-0" aria-hidden="true">
-        <path fillRule="evenodd" d="M2 3.5A1.5 1.5 0 013.5 2h9A1.5 1.5 0 0114 3.5v9a1.5 1.5 0 01-1.5 1.5h-9A1.5 1.5 0 012 12.5v-9zm2 1.75A.75.75 0 014.75 4.5h6.5a.75.75 0 010 1.5h-6.5A.75.75 0 014 5.25zm0 3A.75.75 0 014.75 7.5h6.5a.75.75 0 010 1.5h-6.5A.75.75 0 014 8.25zm0 3a.75.75 0 01.75-.75h3.5a.75.75 0 010 1.5h-3.5a.75.75 0 01-.75-.75z" clipRule="evenodd" />
-      </svg>
-    ),
-  },
-  {
-    to: '/analytics', label: 'Analytics', end: false,
-    icon: (
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-3.5 h-3.5 shrink-0" aria-hidden="true">
-        <path d="M1.75 14A.75.75 0 011 13.25V2.75a.75.75 0 011.5 0v9.75H14a.75.75 0 010 1.5H1.75z" />
-        <path d="M14.53 4.03a.75.75 0 00-1.06-1.06L9 7.44 6.53 4.97a.75.75 0 00-1.06 0l-3.5 3.5a.75.75 0 101.06 1.06L6 6.56l2.47 2.47a.75.75 0 001.06 0l5-5z" />
-      </svg>
-    ),
+    to: '/ai-analysis', label: 'AI Analysis', end: false,
+    icon: (<span className="text-sm leading-none">🔍</span>),
   },
 ]
 
@@ -102,7 +47,7 @@ function AppNavLink({ to, label, end, icon }: { to: string; label: string; end?:
       to={to}
       end={end}
       className={({ isActive }) =>
-        `relative flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium
+        `relative flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-xs font-medium
          transition-all duration-150 whitespace-nowrap select-none
          focus:outline-none focus-visible:ring-2 focus-visible:ring-magenta/50 ${
            isActive
@@ -113,13 +58,14 @@ function AppNavLink({ to, label, end, icon }: { to: string; label: string; end?:
     >
       {({ isActive }) => (
         <>
-          <span className={isActive ? 'text-magenta' : 'text-muted group-hover:text-primary'}>
+          <span className={isActive ? 'text-magenta' : 'text-muted'}>
             {icon}
           </span>
-          {label}
+          {/* Hide labels on md, show on lg+ */}
+          <span className="hidden lg:inline">{label}</span>
           {isActive && (
             <span
-              className="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-3 h-0.5 rounded-full bg-gradient-to-r from-magenta to-teal"
+              className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-0.5 rounded-full bg-gradient-to-r from-magenta to-teal"
               aria-hidden="true"
             />
           )}
@@ -129,44 +75,11 @@ function AppNavLink({ to, label, end, icon }: { to: string; label: string; end?:
   )
 }
 
-function QuotaBar({ refreshKey }: { refreshKey: number }) {
-  const [quota, setQuota] = useState<{ used: number; limit: number; disabled: boolean } | null>(null)
-
-  useEffect(() => {
-    axios.get('/api/auth/quota')
-      .then(r => setQuota(r.data))
-      .catch(() => {})
-  }, [refreshKey])
-
-  if (!quota || quota.disabled || quota.limit === 0) return null
-
-  const pct = Math.min(100, Math.round((quota.used / quota.limit) * 100))
-  const color = pct >= 90 ? 'bg-danger' : pct >= 70 ? 'bg-warning' : 'bg-success'
-
-  return (
-    <div className="px-4 py-2.5 border-b border-border bg-surface-raised">
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-[11px] text-muted font-medium">Daily AI Quota</span>
-        <span className="text-xs font-mono font-medium text-secondary">
-          {quota.used} <span className="text-muted">/ {quota.limit}</span>
-        </span>
-      </div>
-      <div className="h-1.5 w-full rounded-full bg-border overflow-hidden">
-        <div
-          className={`h-full rounded-full transition-all duration-500 ${color}`}
-          style={{ width: `${pct}%` }}
-        />
-      </div>
-    </div>
-  )
-}
-
 function UserMenu() {
   const { user, logout } = useAuth()
   const { accent, setAccent } = useThemeSettings()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
-  const [quotaKey, setQuotaKey] = useState(0)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -184,19 +97,19 @@ function UserMenu() {
   const initial = user.name ? user.name.charAt(0).toUpperCase() : 'U'
 
   function toggleOpen() {
-    setOpen(v => {
-      const next = !v
-      if (next) setQuotaKey(k => k + 1)
-      return next
-    })
+    setOpen(v => !v)
   }
 
   const ACCENTS: { id: AccentTheme; label: string; color: string }[] = [
-    { id: 'gold', label: 'Gold', color: '#F59E0B' },
-    { id: 'cyber', label: 'Cyber', color: '#EC4899' },
-    { id: 'emerald', label: 'Emerald', color: '#10B981' },
-    { id: 'sapphire', label: 'Sapphire', color: '#3B82F6' },
-    { id: 'sunset', label: 'Sunset', color: '#F97316' },
+    { id: 'gold',    label: 'Gold',         color: '#F59E0B' },
+    { id: 'cyber',   label: 'Cyber',        color: '#EC4899' },
+    { id: 'sapphire',label: 'Sapphire',     color: '#3B82F6' },
+    { id: 'sunset',  label: 'Sunset',       color: '#F97316' },
+    { id: 'rose',    label: 'Rose Quartz',  color: '#FB7185' },
+    { id: 'arctic',  label: 'Arctic Ice',   color: '#22D3EE' },
+    { id: 'emerald', label: 'Emerald',      color: '#10B981' },
+    { id: 'crimson', label: 'Crimson',      color: '#EF4444' },
+    { id: 'violet',  label: 'Violet Dream', color: '#A855F7' },
   ]
 
   return (
@@ -234,21 +147,19 @@ function UserMenu() {
             </div>
           </div>
 
-          <QuotaBar refreshKey={quotaKey} />
-
           {/* Quick Accent Switcher */}
           <div className="p-3 border-b border-border">
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-semibold text-secondary uppercase tracking-wider">Accent Theme</span>
               <span className="text-[11px] font-mono text-muted capitalize">{accent}</span>
             </div>
-            <div className="flex items-center justify-between gap-1">
+            <div className="flex items-center flex-wrap gap-1.5">
               {ACCENTS.map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => setAccent(item.id)}
-                  className={`w-6 h-6 rounded-full border transition-all ${
+                  className={`w-5 h-5 rounded-full border transition-all ${
                     accent === item.id ? 'scale-125 ring-2 ring-magenta/50 border-white' : 'border-border hover:scale-110'
                   }`}
                   style={{ backgroundColor: item.color }}
@@ -260,17 +171,6 @@ function UserMenu() {
 
           {/* Actions */}
           <div className="p-1.5 space-y-0.5" role="none">
-            <button
-              onClick={() => { setOpen(false); navigate('/settings') }}
-              role="menuitem"
-              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-secondary hover:text-primary hover:bg-surface-raised transition-colors text-left"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-4 h-4 text-muted">
-                <path fillRule="evenodd" d="M6.955 1.45A.5.5 0 017.452 1h1.096a.5.5 0 01.497.45l.17 1.699a5.01 5.01 0 011.322.55l1.423-.866a.5.5 0 01.605.083l.775.775a.5.5 0 01.083.605l-.866 1.423c.23.418.4.865.55 1.322l1.699.17a.5.5 0 01.45.497v1.096a.5.5 0 01-.45.497l-1.699.17a5.014 5.014 0 01-.55 1.322l.866 1.423a.5.5 0 01-.083.605l-.775.775a.5.5 0 01-.605.083l-1.423-.866a5.014 5.014 0 01-1.322.55l-.17 1.699a.5.5 0 01-.497.45H7.452a.5.5 0 01-.497-.45l-.17-1.699a5.014 5.014 0 01-1.322-.55l-1.423.866a.5.5 0 01-.605-.083l-.775-.775a.5.5 0 01-.083-.605l.866-1.423a5.014 5.014 0 01-.55-1.322L1.45 8.549A.5.5 0 011 8.052V6.956a.5.5 0 01.45-.497l1.699-.17c.15-.457.32-.904.55-1.322l-.866-1.423a.5.5 0 01.083-.605l.775-.775a.5.5 0 01.605-.083l1.423.866a5.01 5.01 0 011.322-.55l.17-1.699zM8 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5z" clipRule="evenodd" />
-              </svg>
-              Settings & Preferences
-            </button>
-
             <button
               onClick={() => { setOpen(false); logout().then(() => navigate('/login')) }}
               role="menuitem"
@@ -291,12 +191,14 @@ function UserMenu() {
 export default function Navbar() {
   const { user, loading } = useAuth()
   const { setIsShortcutsOpen, isOnline } = useThemeSettings()
+  const navigate = useNavigate()
+  const location = useLocation()
 
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-surface/85 backdrop-blur-lg">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-4">
         {/* Left Side: Brand */}
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 shrink-0">
           <Link
             to="/"
             className="flex items-center gap-2 group focus:outline-none shrink-0"
@@ -320,21 +222,23 @@ export default function Navbar() {
 
         {/* Feature Nav: Desktop */}
         {user && (
-          <nav className="hidden md:flex items-center gap-1 overflow-x-auto py-1" aria-label="Main navigation">
-            {NAV_ITEMS.map((item) => (
-              <AppNavLink
-                key={item.to}
-                to={item.to}
-                label={item.label}
-                end={item.end}
-                icon={item.icon}
-              />
-            ))}
-          </nav>
+          <div className="hidden md:flex min-w-0 flex-1 justify-center">
+            <nav className="flex items-center gap-0.5 py-1" aria-label="Main navigation">
+              {NAV_ITEMS.map((item) => (
+                <AppNavLink
+                  key={item.to}
+                  to={item.to}
+                  label={item.label}
+                  end={item.end}
+                  icon={item.icon}
+                />
+              ))}
+            </nav>
+          </div>
         )}
 
         {/* Right side Actions */}
-        <div className="flex items-center gap-2.5">
+        <div className="flex items-center gap-2 shrink-0">
           {!isOnline && (
             <span className="px-2 py-0.5 rounded-full bg-danger/15 text-danger border border-danger/30 text-[10px] font-semibold flex items-center gap-1">
               <span className="w-1.5 h-1.5 rounded-full bg-danger"></span>
@@ -359,6 +263,27 @@ export default function Navbar() {
               </svg>
             </button>
           </Tooltip>
+
+          {/* Settings icon */}
+          {user && (
+            <Tooltip content="Settings" position="bottom">
+              <button
+                type="button"
+                onClick={() => navigate('/settings')}
+                className={`w-9 h-9 rounded-xl flex items-center justify-center border transition-all duration-200 active:scale-95 shadow-xs ${
+                  location.pathname === '/settings'
+                    ? 'border-magenta/50 bg-magenta/10 text-magenta'
+                    : 'border-border bg-surface hover:bg-surface-raised hover:border-border-strong text-secondary hover:text-primary'
+                }`}
+                aria-label="Settings"
+              >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                <circle cx="12" cy="12" r="3" />
+                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+              </svg>
+            </button>
+            </Tooltip>
+          )}
 
           <ThemeToggle />
 

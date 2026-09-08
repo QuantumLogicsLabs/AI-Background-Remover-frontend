@@ -1,8 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react'
 import DOMPurify from 'dompurify'
-import type { Message, ChatResponse, ImageAnalysis, CaptionStyle, PromptTemplate } from '../types'
+import type { Message, ChatResponse, ImageAnalysis, CaptionStyle } from '../types'
 import { chatService } from '../services/chatService'
-import { promptService } from '../services/promptService'
 import { favoriteService } from '../services/favoriteService'
 import { imageService } from '../services/imageService'
 import { useActiveImage } from '../contexts/ActiveImageContext'
@@ -69,7 +68,7 @@ function buildHistoryContext(messages: Message[], maxTurns: number = 3): string 
 
 // ─── Error Types ───────────────────────────────────────────────────────────────
 
-type ErrorType = 'auth' | 'rate_limit' | 'timeout' | 'quota' | 'network' | 'generic'
+type ErrorType = 'auth' | 'rate_limit' | 'timeout' | 'network' | 'generic'
 
 interface ErrorInfo {
   type: ErrorType
@@ -117,14 +116,6 @@ const getErrorInfo = (error: any): ErrorInfo => {
       timestamp: Date.now()
     }
   }
-  if (lowerMessage.includes('quota')) {
-    return {
-      type: 'quota',
-      message: 'AI service quota exceeded. Please check your plan and usage.',
-      retryable: false,
-      timestamp: Date.now()
-    }
-  }
   if (lowerMessage.includes('network') || lowerMessage.includes('connection')) {
     return {
       type: 'network',
@@ -151,8 +142,6 @@ const ErrorDisplay: React.FC<{ error: ErrorInfo; onRetry?: () => void; onDismiss
         return <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
       case 'timeout':
         return <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" /></svg>
-      case 'quota':
-        return <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
       case 'network':
         return <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0" /></svg>
       default:
@@ -408,6 +397,23 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
   const [mode, setMode] = useState<Mode>('chat')
   const [unread, setUnread] = useState(0)
 
+  // Handle custom event to open chatbot in specific mode
+  useEffect(() => {
+    const handleOpenChatbot = (e: Event) => {
+      const customEvent = e as CustomEvent<{ mode?: Mode }>
+      if (customEvent.detail?.mode) {
+        setMode(customEvent.detail.mode)
+      }
+      setIsOpen(true)
+      setIsMinimized(false)
+    }
+    
+    window.addEventListener('open-chatbot', handleOpenChatbot)
+    return () => {
+      window.removeEventListener('open-chatbot', handleOpenChatbot)
+    }
+  }, [])
+
   const [position, setPosition] = useState<Position>(initialPosition)
   const [size, setSize] = useState<{ width: number; height: number }>(SIZE_PRESETS.standard)
   const [isFullscreen, setIsFullscreen] = useState(false)
@@ -498,9 +504,6 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
   const [pendingChatMessage, setPendingChatMessage] = useState<string | null>(null)
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [templates, setTemplates] = useState<PromptTemplate[]>([])
-  const [templatesLoading, setTemplatesLoading] = useState(false)
-  const [showTemplates, setShowTemplates] = useState(false)
   const [favoritedIds, setFavoritedIds] = useState<Set<string>>(new Set())
   const [showBatch, setShowBatch] = useState(false)
   const [batchFiles, setBatchFiles] = useState<File[]>([])
@@ -689,47 +692,6 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
 
   const handleResendMessage = (content: string) => sendChat(content)
 
-  const fetchTemplates = async () => {
-    if (templatesLoading) return
-    setTemplatesLoading(true)
-    try {
-      const data = await promptService.list()
-      setTemplates(data)
-    } catch { /* ignore */ }
-    finally { setTemplatesLoading(false) }
-  }
-
-  const toggleTemplates = () => {
-    const next = !showTemplates
-    setShowTemplates(next)
-    if (next && templates.length === 0) fetchTemplates()
-  }
-
-  const handleUseTemplate = async (t: PromptTemplate) => {
-    setChatInput(t.prompt_text.slice(0, MAX_CHARS))
-    setShowTemplates(false)
-    chatInputRef.current?.focus()
-    try { await promptService.use(t.template_id) } catch { /* ignore */ }
-  }
-
-  const handleSaveTemplate = async () => {
-    const text = chatInput.trim()
-    if (!text) return
-    const title = window.prompt('Template title:', text.slice(0, 40))
-    if (!title) return
-    try {
-      const t = await promptService.create(title, text)
-      setTemplates(prev => [t, ...prev])
-    } catch { /* ignore */ }
-  }
-
-  const handleDeleteTemplate = async (id: string) => {
-    try {
-      await promptService.remove(id)
-      setTemplates(prev => prev.filter(t => t.template_id !== id))
-    } catch { /* ignore */ }
-  }
-
   const runAnalysis = async () => {
     if (!activeFile || analysisLoading) return
     setAnalysisLoading(true); setAnalysisError(null); setAnalysis(null)
@@ -883,30 +845,6 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
             <div ref={bottomRef} />
           </div>
           <div className="border-t border-border bg-surface-raised p-2.5 flex flex-col gap-1.5 shrink-0">
-            {showTemplates && (
-              <div className="rounded-xl border border-border bg-surface p-2 max-h-40 overflow-y-auto space-y-1">
-                {templatesLoading && <p className="text-[10px] text-muted px-1">Loading...</p>}
-                {!templatesLoading && templates.length === 0 && (
-                  <p className="text-[10px] text-muted px-1">No saved templates yet.</p>
-                )}
-                {templates.map(t => (
-                  <div key={t.template_id} className="flex items-center gap-2 group">
-                    <button onClick={() => handleUseTemplate(t)}
-                      className="flex-1 text-left px-2 py-1 rounded-lg text-[11px] text-secondary hover:text-primary hover:bg-surface-raised transition-all truncate">
-                      {t.title}
-                    </button>
-                    <button onClick={() => handleDeleteTemplate(t.template_id)} title="Delete"
-                      className="opacity-0 group-hover:opacity-100 text-muted hover:text-danger transition-all shrink-0 px-1">
-                      <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
-                    </button>
-                  </div>
-                ))}
-                <button onClick={handleSaveTemplate} disabled={!chatInput.trim()}
-                  className="w-full text-left px-2 py-1 rounded-lg text-[10px] font-semibold text-magenta hover:bg-magenta/5 transition-all disabled:opacity-30">
-                  + Save current input as template
-                </button>
-              </div>
-            )}
             <div className="flex gap-2 items-end">
               {messages.length > 0 && (
                 <button onClick={() => { setMessages([]); setChatError(null); setPendingChatMessage(null); setEditingId(null) }} title="Clear"
@@ -919,16 +857,12 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
                 <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" /></svg>
               </button>
               <input ref={chatFileInputRef} type="file" accept="image/*" className="hidden" onChange={handleChatFileSelected} />
-              <button onClick={toggleTemplates} title="Prompt templates"
-                className={`w-7 h-7 rounded-lg flex items-center justify-center transition-all mb-[1px] shrink-0 ${showTemplates ? 'text-magenta bg-magenta/10' : 'text-muted hover:text-magenta hover:bg-magenta/10'}`}>
-                <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-              </button>
               <textarea ref={chatInputRef} value={chatInput}
                 onChange={e => setChatInput(e.target.value.slice(0, MAX_CHARS))}
                 onKeyDown={handleChatKey}
                 disabled={chatLoading} rows={1} placeholder="Ask something..."
                 maxLength={MAX_CHARS}
-                className="flex-1 bg-surface border border-border rounded-xl px-3 py-2 text-[12.5px] text-primary placeholder-muted outline-none resize-none focus:border-magenta focus:ring-1 focus:ring-magenta/30 transition-all scrollbar-none"
+                className="flex-1 bg-surface border border-border border-r-0 rounded-xl px-3 py-2 text-[12.5px] text-primary placeholder-muted outline-none resize-none focus:border-magenta focus:ring-1 focus:ring-magenta/30 transition-all scrollbar-none"
                 style={{ height: '36px', maxHeight: '140px' }}
                 onInput={e => { const t = e.target as HTMLTextAreaElement; t.style.height = '36px'; t.style.height = Math.min(t.scrollHeight, 140) + 'px' }} />
               <button onClick={() => sendChat()} disabled={chatLoading || !chatInput.trim()}
@@ -1341,7 +1275,7 @@ export const getBackgroundPreviewUrls = (suggestion: string) => {
     }
   }
 
-  const cleanPrompt = suggestion.replace(/^\d+[\.\-\)]\s*/, '').replace(/["']/g, '').toLowerCase().trim()
+  const cleanPrompt = suggestion.replace(/^\d+[.\-)]\s*/, '').replace(/["']/g, '').toLowerCase().trim()
 
   let matchedPhotoId: string | null = null
   for (const item of BACKDROP_PHOTO_MAP) {

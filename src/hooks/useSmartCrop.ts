@@ -88,7 +88,6 @@ export function useSmartCrop() {
       const res = await axios.post<CropResult>(
         '/api/smart-crop',
         buildFormData(file, s),
-        { headers: { 'Content-Type': 'multipart/form-data' } },
       )
       setResult(res.data)
       setStatus('done')

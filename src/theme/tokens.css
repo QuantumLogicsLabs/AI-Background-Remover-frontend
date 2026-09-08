@@ -215,6 +215,62 @@
   --gradient-brand:       linear-gradient(135deg, #F59E0B 0%, #F97316 100%);
 }
 
+/* --- Rose Quartz Theme (Soft Pink / Blush) --- */
+[data-accent='rose'] {
+  --accent-primary:       #FB7185;
+  --accent-primary-hover: #FDA4AF;
+  --accent-primary-glow:  rgba(251, 113, 133, 0.30);
+  --accent-secondary:       #F472B6;
+  --accent-secondary-hover: #F9A8D4;
+  --accent-magenta:       #FB7185;
+  --accent-magenta-hover: #FDA4AF;
+  --accent-teal:          #F472B6;
+  --accent-teal-hover:    #F9A8D4;
+  --gradient-brand:       linear-gradient(135deg, #FB7185 0%, #F472B6 100%);
+}
+
+/* --- Arctic Ice Theme (Icy Cyan / Sky) --- */
+[data-accent='arctic'] {
+  --accent-primary:       #22D3EE;
+  --accent-primary-hover: #67E8F9;
+  --accent-primary-glow:  rgba(34, 211, 238, 0.30);
+  --accent-secondary:       #38BDF8;
+  --accent-secondary-hover: #7DD3FC;
+  --accent-magenta:       #22D3EE;
+  --accent-magenta-hover: #67E8F9;
+  --accent-teal:          #38BDF8;
+  --accent-teal-hover:    #7DD3FC;
+  --gradient-brand:       linear-gradient(135deg, #22D3EE 0%, #38BDF8 100%);
+}
+
+/* --- Crimson Theme (Deep Red / Ruby) --- */
+[data-accent='crimson'] {
+  --accent-primary:       #EF4444;
+  --accent-primary-hover: #F87171;
+  --accent-primary-glow:  rgba(239, 68, 68, 0.30);
+  --accent-secondary:       #DC2626;
+  --accent-secondary-hover: #EF4444;
+  --accent-magenta:       #EF4444;
+  --accent-magenta-hover: #F87171;
+  --accent-teal:          #DC2626;
+  --accent-teal-hover:    #EF4444;
+  --gradient-brand:       linear-gradient(135deg, #EF4444 0%, #B91C1C 100%);
+}
+
+/* --- Violet Dream Theme (Purple / Lilac) --- */
+[data-accent='violet'] {
+  --accent-primary:       #A855F7;
+  --accent-primary-hover: #C084FC;
+  --accent-primary-glow:  rgba(168, 85, 247, 0.30);
+  --accent-secondary:       #7C3AED;
+  --accent-secondary-hover: #8B5CF6;
+  --accent-magenta:       #A855F7;
+  --accent-magenta-hover: #C084FC;
+  --accent-teal:          #7C3AED;
+  --accent-teal-hover:    #8B5CF6;
+  --gradient-brand:       linear-gradient(135deg, #A855F7 0%, #7C3AED 100%);
+}
+
 /* ============================================================
    Checkerboard background utility
    ============================================================ */

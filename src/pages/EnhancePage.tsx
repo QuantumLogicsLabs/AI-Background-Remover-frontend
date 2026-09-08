@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import UploadZone from '../components/UploadZone'
 import ImageCanvas from '../components/ImageCanvas'
 import DownloadButton from '../components/DownloadButton'
@@ -34,8 +34,10 @@ export default function EnhancePage() {
 
   // ── Pipeline handoff: auto-load / stage if navigated via "Send to…" ────────────
   const { activeFile, activePreviewUrl } = useActiveImage()
+  const lastHandledFileRef = useRef<File | null>(null)
   useEffect(() => {
-    if (activeFile) {
+    if (activeFile && activeFile !== lastHandledFileRef.current) {
+      lastHandledFileRef.current = activeFile
       const cachedPreset = sessionStorage.getItem('enhance_preset_settings')
       if (cachedPreset) {
         sessionStorage.removeItem('enhance_preset_settings')
@@ -47,7 +49,7 @@ export default function EnhancePage() {
           })
           // Auto-run with preset settings!
           enhance(activeFile, mergedSettings)
-        } catch (e) {
+        } catch (_e) {
           loadFile(activeFile)
         }
       } else if (!hasFile) {
@@ -55,8 +57,7 @@ export default function EnhancePage() {
         loadFile(activeFile)
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeFile])
+  }, [activeFile, settings, updateSetting, enhance, loadFile, hasFile])
 
   // Listen for AI assistant apply events
   useEffect(() => {

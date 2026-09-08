@@ -2,12 +2,14 @@ import { useState, FormEvent, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
 import { useThemeSettings, AccentTheme } from '../contexts/ThemeSettingsContext'
+import { useBrandKit, ExportFormat, WatermarkSettings } from '../contexts/BrandKitContext'
 import { SHORTCUT_LIST } from '../hooks/useKeyboardShortcuts'
 import CustomSlider from '../components/CustomSlider'
 import { useNavigate } from 'react-router-dom'
 import axios from 'axios'
+import { useAnalytics } from '../hooks/useAnalytics'
 
-type Tab = 'dashboard' | 'appearance' | 'performance' | 'shortcuts' | 'profile' | 'security' | 'danger'
+type Tab = 'dashboard' | 'brandkit' | 'appearance' | 'performance' | 'shortcuts' | 'profile' | 'security' | 'danger' | 'analytics'
 
 function EyeIcon({ visible }: { visible: boolean }) {
   return visible ? (
@@ -73,14 +75,15 @@ function DashboardTab() {
   const { user } = useAuth()
   const [stats, setStats] = useState<any>(null)
   const [loading, setLoading] = useState(true)
+  const [statsError, setStatsError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchStats() {
       try {
         const res = await axios.get('/api/auth/stats')
         setStats(res.data)
-      } catch (err) {
-        console.error("Failed to load stats", err)
+      } catch (_err) {
+        setStatsError('Failed to load usage stats. Please refresh to try again.')
       } finally {
         setLoading(false)
       }
@@ -96,6 +99,14 @@ function DashboardTab() {
     )
   }
 
+  if (statsError) {
+    return (
+      <div role="alert" className="rounded-lg border border-danger/40 bg-surface px-4 py-3 text-sm text-danger animate-fade-up">
+        {statsError}
+      </div>
+    )
+  }
+
   const formatBytes = (bytes: number) => {
     if (bytes === 0) return '0 B'
     const k = 1024
@@ -105,7 +116,6 @@ function DashboardTab() {
   }
 
   const createdDate = user?.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'
-  const quotaPercent = stats?.quota?.limit > 0 ? (stats.quota.used / stats.quota.limit) * 100 : 0
 
   return (
     <div className="flex flex-col gap-8 animate-fade-up">
@@ -117,21 +127,6 @@ function DashboardTab() {
           <h2 className="text-lg font-bold text-primary">{user?.name}</h2>
           <p className="text-sm text-secondary">{user?.email}</p>
           <p className="text-xs text-muted mt-1">Member since {createdDate}</p>
-        </div>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        <div className="flex justify-between items-end">
-          <h3 className="text-sm font-semibold text-primary">Daily Quota</h3>
-          <span className="text-xs text-muted font-medium">
-            {stats?.quota?.used} / {stats?.quota?.limit} images used
-          </span>
-        </div>
-        <div className="h-2.5 w-full bg-surface-raised rounded-full overflow-hidden border border-border">
-          <div
-            className="h-full bg-gradient-to-r from-teal to-magenta transition-all duration-500 ease-out"
-            style={{ width: `${Math.min(quotaPercent, 100)}%` }}
-          />
         </div>
       </div>
 
@@ -164,7 +159,7 @@ function DashboardTab() {
               <span className="text-lg font-bold text-primary">{stats?.operations?.smart_crop || 0}</span>
             </div>
             <div className="flex flex-col">
-              <span className="text-xs text-muted">Recolor</span>
+              <span className="text-xs text-muted">Recolor & Eraser</span>
               <span className="text-lg font-bold text-primary">{stats?.operations?.recolor || 0}</span>
             </div>
           </div>
@@ -180,11 +175,15 @@ function AppearanceTab() {
   const { showToast } = useToast()
 
   const THEMES: { id: AccentTheme; name: string; desc: string; color: string }[] = [
-    { id: 'gold', name: 'Amber Gold (Darkroom Luxury)', desc: 'Warm amber tones on ultra-deep black surfaces', color: '#F59E0B' },
-    { id: 'cyber', name: 'Cyber Neon (Magenta / Violet)', desc: 'Electric magenta & violet glow aesthetic', color: '#EC4899' },
-    { id: 'emerald', name: 'Emerald Mint (Cyan / Green)', desc: 'Crisp green & teal high-contrast matrix', color: '#10B981' },
-    { id: 'sapphire', name: 'Sapphire Electric (Blue / Indigo)', desc: 'Modern technical electric blue interface', color: '#3B82F6' },
-    { id: 'sunset', name: 'Sunset Coral (Orange / Rose)', desc: 'Warm coral gradient with high punch vibrancy', color: '#F97316' },
+    { id: 'gold',    name: 'Amber Gold (Darkroom Luxury)',      desc: 'Warm amber tones on ultra-deep black surfaces',       color: '#F59E0B' },
+    { id: 'cyber',   name: 'Cyber Neon (Magenta / Violet)',     desc: 'Electric magenta & violet glow aesthetic',            color: '#EC4899' },
+    { id: 'sapphire',name: 'Sapphire Electric (Blue / Indigo)', desc: 'Modern technical electric blue interface',            color: '#3B82F6' },
+    { id: 'sunset',  name: 'Sunset Coral (Orange / Rose)',      desc: 'Warm coral gradient with high punch vibrancy',        color: '#F97316' },
+    { id: 'rose',    name: 'Rose Quartz (Pink / Blush)',        desc: 'Soft romantic pink tones, elegant and warm',          color: '#FB7185' },
+    { id: 'arctic',  name: 'Arctic Ice (Cyan / Sky)',           desc: 'Crystal clear icy cyan — clean and futuristic',       color: '#22D3EE' },
+    { id: 'emerald', name: 'Emerald Mint (Cyan / Green)',       desc: 'Crisp green & teal high-contrast matrix',             color: '#10B981' },
+    { id: 'crimson', name: 'Crimson (Deep Red / Ruby)',         desc: 'Bold deep red — powerful and high-contrast',          color: '#EF4444' },
+    { id: 'violet',  name: 'Violet Dream (Purple / Lilac)',     desc: 'Rich purple hues — creative and luxurious',           color: '#A855F7' },
   ]
 
   return (
@@ -533,17 +532,299 @@ function DangerTab() {
   )
 }
 
+
+// ---------------- Brand Kit Tab ----------------
+function BrandKitTab() {
+  const { brandKit, addColor, removeColor, setDefaultExportFormat, updateWatermark } = useBrandKit();
+  const [newColor, setNewColor] = useState('#000000');
+
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      if (ev.target?.result) {
+        updateWatermark({ image: ev.target.result as string, type: 'image' });
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
+  return (
+    <div className="flex flex-col gap-8 animate-fade-up">
+      {/* Brand Colors */}
+      <div className="flex flex-col gap-3 p-4 rounded-xl border border-border bg-surface-raised">
+        <h3 className="text-base font-bold text-primary">Brand Colors</h3>
+        <p className="text-xs text-secondary">Save your brand's color palette to quickly access them in the Recolor tool.</p>
+        <div className="flex flex-wrap gap-2 mt-2">
+          {brandKit.colors.map((c) => (
+            <div key={c} className="group relative w-10 h-10 rounded-full border border-border shadow-sm flex items-center justify-center cursor-pointer" style={{ backgroundColor: c }}>
+              <button
+                title="Remove color"
+                onClick={() => removeColor(c)}
+                className="absolute inset-0 m-auto w-full h-full rounded-full opacity-0 group-hover:opacity-100 bg-black/50 text-white flex items-center justify-center transition-opacity"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 20 20" fill="currentColor"><path d="M6.28 5.22a.75.75 0 00-1.06 1.06L8.94 10l-3.72 3.72a.75.75 0 101.06 1.06L10 11.06l3.72 3.72a.75.75 0 101.06-1.06L11.06 10l3.72-3.72a.75.75 0 00-1.06-1.06L10 8.94 6.28 5.22z" /></svg>
+              </button>
+            </div>
+          ))}
+          <div className="relative w-10 h-10 rounded-full border-2 border-dashed border-border flex items-center justify-center cursor-pointer hover:border-magenta hover:text-magenta transition-colors overflow-hidden">
+             <input
+               type="color"
+               value={newColor}
+               onChange={(e) => { setNewColor(e.target.value); addColor(e.target.value); }}
+               className="absolute inset-[-10px] w-20 h-20 cursor-pointer opacity-0"
+             />
+             <svg className="w-5 h-5 pointer-events-none" viewBox="0 0 20 20" fill="currentColor"><path d="M10 3a.75.75 0 01.75.75v5.5h5.5a.75.75 0 010 1.5h-5.5v5.5a.75.75 0 01-1.5 0v-5.5h-5.5a.75.75 0 010-1.5h5.5v-5.5A.75.75 0 0110 3z" /></svg>
+          </div>
+        </div>
+      </div>
+
+      {/* Default Export Format */}
+      <div className="flex flex-col gap-3 p-4 rounded-xl border border-border bg-surface-raised">
+        <h3 className="text-base font-bold text-primary">Default Export Format</h3>
+        <p className="text-xs text-secondary">Set the default file format for downloading your designs.</p>
+        <div className="mt-2 w-full max-w-xs">
+          <select
+            value={brandKit.defaultExportFormat}
+            onChange={(e) => setDefaultExportFormat(e.target.value as ExportFormat)}
+            className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-primary focus:outline-none focus:border-magenta transition-colors cursor-pointer appearance-none"
+          >
+            <option value="png">PNG (Transparent)</option>
+            <option value="jpeg">JPEG</option>
+            <option value="webp">WebP (Optimized)</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Watermark */}
+      <div className="flex flex-col gap-3 p-4 rounded-xl border border-border bg-surface-raised">
+        <div className="flex justify-between items-center">
+          <div>
+            <h3 className="text-base font-bold text-primary">Auto-Apply Watermark</h3>
+            <p className="text-xs text-secondary mt-1">Automatically add a watermark to all exported images.</p>
+          </div>
+          <button
+            onClick={() => updateWatermark({ enabled: !brandKit.watermark.enabled })}
+            className={`relative inline-flex h-6 w-11 shrink-0 items-center rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-magenta focus:ring-offset-2 ${brandKit.watermark.enabled ? 'bg-magenta' : 'bg-muted'}`}
+          >
+            <span className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out ${brandKit.watermark.enabled ? 'translate-x-5' : 'translate-x-0'}`} />
+          </button>
+        </div>
+        
+        {brandKit.watermark.enabled && (
+          <div className="mt-4 pt-4 border-t border-border flex flex-col gap-4 animate-fade-up">
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2 text-sm text-primary cursor-pointer">
+                <input type="radio" checked={brandKit.watermark.type === 'text'} onChange={() => updateWatermark({ type: 'text' })} className="accent-magenta" /> Text
+              </label>
+              <label className="flex items-center gap-2 text-sm text-primary cursor-pointer">
+                <input type="radio" checked={brandKit.watermark.type === 'image'} onChange={() => updateWatermark({ type: 'image' })} className="accent-magenta" /> Logo / Image
+              </label>
+            </div>
+            
+            {brandKit.watermark.type === 'text' ? (
+              <div className="flex flex-col gap-1.5 max-w-sm">
+                <label className="text-xs font-medium text-secondary">Watermark Text</label>
+                <input
+                  type="text"
+                  value={brandKit.watermark.text}
+                  onChange={(e) => updateWatermark({ text: e.target.value })}
+                  placeholder="© MyBrand"
+                  className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-primary focus:outline-none focus:border-magenta transition-colors"
+                />
+              </div>
+            ) : (
+              <div className="flex flex-col gap-2 max-w-sm">
+                <label className="text-xs font-medium text-secondary">Upload Logo</label>
+                <input type="file" accept="image/*" onChange={handleImageUpload} className="text-xs file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-medium file:bg-magenta/10 file:text-magenta hover:file:bg-magenta/20" />
+                {brandKit.watermark.image && (
+                  <img src={brandKit.watermark.image} alt="Watermark" className="mt-2 h-12 object-contain bg-surface border border-border rounded p-1" />
+                )}
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4 max-w-md">
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-secondary">Position</label>
+                <select
+                  value={brandKit.watermark.position}
+                  onChange={(e) => updateWatermark({ position: e.target.value as WatermarkSettings['position'] })}
+                  className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm text-primary focus:outline-none focus:border-magenta"
+                >
+                  <option value="bottom-right">Bottom Right</option>
+                  <option value="bottom-left">Bottom Left</option>
+                  <option value="top-right">Top Right</option>
+                  <option value="top-left">Top Left</option>
+                  <option value="center">Center</option>
+                </select>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label className="text-xs font-medium text-secondary">Opacity ({Math.round(brandKit.watermark.opacity * 100)}%)</label>
+                <input
+                  type="range"
+                  min="0"
+                  max="1"
+                  step="0.05"
+                  value={brandKit.watermark.opacity}
+                  onChange={(e) => updateWatermark({ opacity: parseFloat(e.target.value) })}
+                  className="w-full accent-magenta h-2 bg-surface-elevated rounded-lg appearance-none cursor-pointer mt-2"
+                />
+              </div>
+            </div>
+
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ---------------- Analytics Tab ----------------
+function AnalyticsTab() {
+  const { usage, success, cost, feedback, loading, error } = useAnalytics(30)
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-10">
+        <Spinner />
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div role="alert" className="rounded-lg border border-danger/40 bg-surface px-4 py-3 text-sm text-danger animate-fade-up">
+        {error}
+      </div>
+    )
+  }
+
+  const maxUsage = Math.max(1, ...(usage?.by_feature.map(f => f.count) ?? [0]))
+  const avgFeedback =
+    feedback && feedback.by_action_type.length > 0
+      ? (
+          feedback.by_action_type.reduce((sum, r) => sum + r.avg_rating * r.count, 0) /
+          feedback.by_action_type.reduce((sum, r) => sum + r.count, 0)
+        ).toFixed(1)
+      : '—'
+
+  return (
+    <div className="flex flex-col gap-6 animate-fade-up">
+      <div>
+        <h3 className="text-base font-bold text-primary">Analytics &amp; Insights</h3>
+        <p className="text-xs text-secondary mt-0.5">Last 30 days of AI usage, costs, and feedback.</p>
+      </div>
+
+      {/* Stat cards */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {[
+          { label: 'Total AI actions', value: String(usage?.total_events ?? 0) },
+          { label: 'Suggestion apply rate', value: `${Math.round((success?.overall_apply_rate ?? 0) * 100)}%` },
+          { label: 'Estimated AI cost', value: `$${(cost?.total_cost_usd ?? 0).toFixed(4)}`, sub: `${(cost?.total_input_tokens ?? 0) + (cost?.total_output_tokens ?? 0)} tokens` },
+          { label: 'Avg. feedback rating', value: `${avgFeedback} / 5` },
+        ].map(card => (
+          <div key={card.label} className="rounded-xl border border-border bg-surface-raised p-4 flex flex-col gap-1">
+            <p className="text-[10px] text-muted font-medium uppercase tracking-wider">{card.label}</p>
+            <p className="text-xl font-display font-bold text-primary">{card.value}</p>
+            {card.sub && <p className="text-[10px] text-secondary">{card.sub}</p>}
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+        {/* Usage by feature */}
+        <div className="rounded-xl border border-border bg-surface-raised p-4">
+          <h4 className="text-sm font-semibold text-primary mb-3">Most used AI features</h4>
+          {usage && usage.by_feature.length > 0 ? (
+            <div className="space-y-3">
+              {usage.by_feature.map(f => {
+                const pct = maxUsage > 0 ? Math.round((f.count / maxUsage) * 100) : 0
+                return (
+                  <div key={f.feature} className="flex items-center gap-3">
+                    <span className="text-xs text-secondary w-28 shrink-0 truncate">{f.feature}</span>
+                    <div className="flex-1 h-2 rounded-full bg-page overflow-hidden">
+                      <div className="h-full bg-teal rounded-full transition-all duration-500" style={{ width: `${pct}%` }} />
+                    </div>
+                    <span className="text-xs font-medium text-primary w-8 text-right shrink-0">{f.count}</span>
+                  </div>
+                )
+              })}
+            </div>
+          ) : (
+            <p className="text-muted text-xs">No usage data yet.</p>
+          )}
+        </div>
+
+        {/* Success metrics */}
+        <div className="rounded-xl border border-border bg-surface-raised p-4">
+          <h4 className="text-sm font-semibold text-primary mb-3">Suggestion apply rate by feature</h4>
+          {success && success.by_action_type.length > 0 ? (
+            <ul className="space-y-2.5">
+              {success.by_action_type.map(row => (
+                <li key={row.action_type} className="flex items-center justify-between text-xs">
+                  <span className="text-secondary">{row.action_type}</span>
+                  <span className="text-primary font-medium">
+                    {row.applied_count}/{row.suggested_count} ({Math.round(row.apply_rate * 100)}%)
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-muted text-xs">No action history yet.</p>
+          )}
+        </div>
+
+        {/* Cost by feature */}
+        <div className="rounded-xl border border-border bg-surface-raised p-4">
+          <h4 className="text-sm font-semibold text-primary mb-3">Cost by feature</h4>
+          {cost && Object.keys(cost.by_feature).length > 0 ? (
+            <ul className="space-y-2.5">
+              {Object.entries(cost.by_feature).map(([feature, amount]) => (
+                <li key={feature} className="flex items-center justify-between text-xs">
+                  <span className="text-secondary">{feature}</span>
+                  <span className="text-primary font-medium">${(amount as number).toFixed(4)}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-muted text-xs">No cost data yet.</p>
+          )}
+        </div>
+
+        {/* Feedback ratings */}
+        <div className="rounded-xl border border-border bg-surface-raised p-4">
+          <h4 className="text-sm font-semibold text-primary mb-3">Quality feedback by feature</h4>
+          {feedback && feedback.by_action_type.length > 0 ? (
+            <ul className="space-y-2.5">
+              {feedback.by_action_type.map(row => (
+                <li key={row.action_type} className="flex items-center justify-between text-xs">
+                  <span className="text-secondary">{row.action_type}</span>
+                  <span className="text-primary font-medium">
+                    {row.avg_rating.toFixed(1)} / 5 ({row.count} rating{row.count !== 1 ? 's' : ''})
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-muted text-xs">No feedback submitted yet.</p>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
 export default function SettingsPage() {
+
   const [tab, setTab] = useState<Tab>('appearance')
 
   const tabs: { id: Tab; label: string }[] = [
-    { id: 'appearance', label: 'Appearance & Themes' },
-    { id: 'performance', label: 'Client Compression' },
-    { id: 'dashboard', label: 'Usage & Quotas' },
-    { id: 'shortcuts', label: 'Shortcuts' },
-    { id: 'profile', label: 'Profile' },
-    { id: 'security', label: 'Security' },
-    { id: 'danger', label: 'Danger Zone' },
+    { id: 'appearance', label: 'Appearance' },
+    { id: 'profile',    label: 'Profile' },
+    { id: 'security',   label: 'Security' },
+    { id: 'shortcuts',  label: 'Shortcuts' },
+    { id: 'danger',     label: 'Danger Zone' },
   ]
 
   return (
@@ -579,6 +860,8 @@ export default function SettingsPage() {
             {tab === 'appearance' && <AppearanceTab />}
             {tab === 'performance' && <PerformanceTab />}
             {tab === 'dashboard' && <DashboardTab />}
+            {tab === 'analytics' && <AnalyticsTab />}
+            {tab === 'brandkit' && <BrandKitTab />}
             {tab === 'shortcuts' && <ShortcutsTab />}
             {tab === 'profile' && <ProfileTab />}
             {tab === 'security' && <SecurityTab />}
