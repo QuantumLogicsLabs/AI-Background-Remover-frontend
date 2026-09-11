@@ -272,8 +272,47 @@
 }
 
 /* ============================================================
-   Checkerboard background utility
+   Auth pages — fixed violet/pink palette
+   Applied when data-auth-page="true" is on <html>.
+   Completely ignores any data-accent value.
+   Light: violet-600 primary, teal/cyan secondary
+   Dark:  violet-500 primary, purple secondary
    ============================================================ */
+[data-auth-page] {
+  --accent-primary:        #7C3AED;   /* violet-700 */
+  --accent-primary-hover:  #6D28D9;
+  --accent-primary-glow:   rgba(124, 58, 237, 0.25);
+
+  --accent-secondary:       #2FBFB0;  /* teal — keeps the card top-bar teal */
+  --accent-secondary-hover: #26A99B;
+
+  --accent-magenta:        #7C3AED;
+  --accent-magenta-hover:  #6D28D9;
+  --accent-teal:           #2FBFB0;
+  --accent-teal-hover:     #26A99B;
+
+  --gradient-brand:        linear-gradient(135deg, #7C3AED 0%, #2FBFB0 100%);
+  --dynamic-glow-color:    rgba(124, 58, 237, 0.15);
+}
+
+[data-auth-page][data-theme='dark'] {
+  --accent-primary:        #F59E0B;   /* amber-400 — warm orange/gold */
+  --accent-primary-hover:  #FBBF24;
+  --accent-primary-glow:   rgba(245, 158, 11, 0.30);
+
+  --accent-secondary:       #F97316;  /* orange-500 */
+  --accent-secondary-hover: #FB923C;
+
+  --accent-magenta:        #F59E0B;
+  --accent-magenta-hover:  #FBBF24;
+  --accent-teal:           #F97316;
+  --accent-teal-hover:     #FB923C;
+
+  --gradient-brand:        linear-gradient(135deg, #F59E0B 0%, #F97316 100%);
+  --dynamic-glow-color:    rgba(245, 158, 11, 0.20);
+}
+
+
 .bg-checker {
   background-image:
     linear-gradient(45deg,  var(--checker-tile-2) 25%, transparent 25%),

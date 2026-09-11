@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react'
+import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
 import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './hooks/useAuth'
@@ -56,12 +56,26 @@ function MainLayout() {
   const authPages = ['/login', '/register', '/forgot-password', '/reset-password']
   const isAuthPage = authPages.includes(location.pathname)
 
+  // Toggle data-auth-page attribute on <html> so the theme engine can exclude accent
+  // overrides on auth pages, keeping them pinned to their fixed violet/pink palette.
+  useEffect(() => {
+    if (isAuthPage) {
+      document.documentElement.setAttribute('data-auth-page', 'true')
+      document.documentElement.removeAttribute('data-accent')
+    } else {
+      document.documentElement.removeAttribute('data-auth-page')
+      // Signal ThemeSettingsContext to reapply the saved accent
+      window.dispatchEvent(new CustomEvent('reapply-accent'))
+    }
+    return () => { document.documentElement.removeAttribute('data-auth-page') }
+  }, [isAuthPage])
+
   return (
-    <div className="min-h-screen flex flex-col selection:bg-magenta selection:text-white relative z-[1]">
+    <div className={`min-h-screen flex flex-col selection:bg-magenta selection:text-white relative z-[1] ${isAuthPage ? 'bg-page' : ''}`}>
       <AnimatedBackground />
       {!isAuthPage && <Navbar />}
       <div className="flex-1 flex w-full relative z-[1]">
-        <main className="flex-1 min-w-0 pb-16 md:pb-6">
+        <main className={`flex-1 min-w-0 ${!isAuthPage ? 'pb-16 md:pb-6' : ''}`}>
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Public routes */}

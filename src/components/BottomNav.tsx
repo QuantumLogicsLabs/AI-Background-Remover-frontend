@@ -32,7 +32,8 @@ export default function BottomNav() {
   return (
     <nav
       aria-label="Mobile navigation"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-surface/90 backdrop-blur-lg border-t border-border px-2 py-1.5 flex items-center justify-around shadow-2xl safe-area-pb"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface border-t border-border px-2 py-1.5 flex items-center justify-around shadow-2xl safe-area-pb"
+      style={{ backdropFilter: 'blur(12px)', backgroundColor: 'var(--bg-surface)' }}
     >
       {MOBILE_NAV_ITEMS.map((item) => (
         <NavLink

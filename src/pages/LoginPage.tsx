@@ -150,7 +150,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="flex-1 flex items-stretch min-h-[calc(100vh-48px)] select-none">
+    <main className="flex-1 flex items-stretch min-h-screen select-none">
 
       {/* ── Left panel — marketing (Visible on desktop) ───────────────────── */}
       <div className="hidden lg:grid lg:grid-cols-12 gap-8 lg:w-[60%] xl:w-[65%] relative overflow-hidden
@@ -172,22 +172,20 @@ export default function LoginPage() {
         <div className="col-span-5 flex flex-col justify-between relative z-10 h-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <svg className="w-10 h-8 text-violet-600 dark:text-amber-500" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern id="stripes" width="4" height="4" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-                  <line x1="0" y1="0" x2="0" y2="4" stroke="currentColor" strokeWidth="1.5" />
-                </pattern>
-                <mask id="intersection">
-                  <circle cx="32" cy="16" r="13" fill="white" />
-                </mask>
-              </defs>
-              <circle cx="16" cy="16" r="13" stroke="currentColor" strokeWidth="2.5" />
-              <circle cx="32" cy="16" r="13" stroke="currentColor" strokeWidth="2.5" className="opacity-60" />
-              <circle cx="16" cy="16" r="13" fill="url(#stripes)" mask="url(#intersection)" />
-            </svg>
-            <div className="flex items-baseline">
-              <span className="font-display font-bold text-lg text-slate-900 dark:text-white tracking-tight">Removing</span>
-              <span className="font-display font-bold text-lg text-violet-600 dark:text-amber-500 tracking-tight">Background.io</span>
+            <span className="w-10 h-10 rounded-xl bg-[#7C3AED] dark:bg-[#F59E0B] text-white flex items-center justify-center shrink-0 shadow-md">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <circle cx="6" cy="6" r="2.5" />
+                <circle cx="6" cy="18" r="2.5" />
+                <path d="M8.12 8.12 20 4" />
+                <path d="M8.5 15.5 20 20" />
+                <path d="M8.12 8.12 12 12" />
+                <path d="M12 12 8.5 15.5" />
+              </svg>
+            </span>
+            <div className="flex items-baseline gap-0.5">
+              <span className="font-display font-bold text-xl text-slate-900 dark:text-white tracking-tight">BG</span>
+              <span className="font-display font-bold text-xl text-[#7C3AED] dark:text-[#F59E0B] tracking-tight">.</span>
+              <span className="font-display font-bold text-xl text-slate-900 dark:text-white tracking-tight">Remover</span>
             </div>
           </div>
 
@@ -294,7 +292,7 @@ export default function LoginPage() {
               <span className="absolute top-3 left-3 bg-black/40 text-white text-[10px] font-semibold px-2.5 py-1 rounded-md backdrop-blur-sm shadow-sm">
                 Original
               </span>
-              <span className="absolute top-3 right-3 bg-violet-600 dark:bg-amber-600 text-white text-[10px] font-semibold px-2.5 py-1 rounded-md shadow-sm">
+              <span className="absolute top-3 right-3 bg-[#7C3AED] dark:bg-[#F59E0B] text-white text-[10px] font-semibold px-2.5 py-1 rounded-md shadow-sm">
                 Background Removed
               </span>
 
@@ -336,14 +334,18 @@ export default function LoginPage() {
         <div className="relative z-10 w-full max-w-sm flex flex-col gap-8">
 
           {/* Mobile logo (hidden on lg where left panel shows) */}
-          <div className="lg:hidden flex flex-col items-center gap-1">
-            <span className="w-12 h-12 rounded-2xl bg-gradient-to-br from-magenta to-teal
-              flex items-center justify-center shadow-glow-sm mb-1">
-              <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth="2.5" stroke="white" className="w-6 h-6">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 11-3 0m3 0a1.5 1.5 0 10-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 01-3 0m3 0a1.5 1.5 0 00-3 0m-9.75 0h9.75" />
+          <div className="lg:hidden flex items-center justify-center gap-2.5">
+            <span className="w-10 h-10 rounded-xl bg-[#7C3AED] dark:bg-[#F59E0B] text-white flex items-center justify-center shrink-0 shadow-md">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <circle cx="6" cy="6" r="2.5" />
+                <circle cx="6" cy="18" r="2.5" />
+                <path d="M8.12 8.12 20 4" />
+                <path d="M8.5 15.5 20 20" />
+                <path d="M8.12 8.12 12 12" />
+                <path d="M12 12 8.5 15.5" />
               </svg>
             </span>
-            <span className="font-display font-bold text-xl text-primary">Removing<span className="text-magenta">.</span>io</span>
+            <span className="font-display font-bold text-xl text-primary">BG<span className="text-[#7C3AED] dark:text-[#F59E0B]">.</span>Remover</span>
           </div>
 
           {/* Header */}
@@ -361,7 +363,7 @@ export default function LoginPage() {
             style={{ boxShadow: 'var(--shadow-md)' }}
           >
             {/* Accent top bar */}
-            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-magenta via-teal to-magenta opacity-60 rounded-t-2xl" />
+            <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#7C3AED] via-[#2FBFB0] to-[#7C3AED] dark:from-[#F59E0B] dark:via-[#F97316] dark:to-[#F59E0B] opacity-60 rounded-t-2xl" />
             <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
 
               {/* Email */}
@@ -443,7 +445,7 @@ export default function LoginPage() {
               <div className="flex justify-end -mt-1">
                 <Link
                   to="/forgot-password"
-                  className="text-xs text-secondary hover:text-magenta transition-colors"
+                  className="text-xs text-secondary hover:text-[#7C3AED] dark:hover:text-[#F59E0B] transition-colors"
                 >
                   Forgot password?
                 </Link>
@@ -454,7 +456,7 @@ export default function LoginPage() {
                 type="submit"
                 disabled={busy || !email || !password}
                 className="w-full flex items-center justify-center gap-2 px-5 py-2.5 mt-1
-                  rounded-lg bg-gradient-to-r from-magenta to-teal
+                  rounded-lg bg-gradient-to-r from-[#7C3AED] to-[#2FBFB0] dark:from-[#F59E0B] dark:to-[#F97316]
                   hover:opacity-90 text-white font-semibold text-sm
                   transition-all active:scale-95 shadow-sm
                   disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
@@ -483,7 +485,7 @@ export default function LoginPage() {
           {/* Footer */}
           <p className="text-center text-sm text-secondary">
             Don't have an account?{' '}
-            <Link to="/register" className="font-semibold text-magenta hover:underline">
+            <Link to="/register" className="font-semibold text-[#7C3AED] dark:text-[#F59E0B] hover:underline">
               Create one free
             </Link>
           </p>
