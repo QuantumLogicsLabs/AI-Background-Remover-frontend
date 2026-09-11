@@ -166,7 +166,7 @@ export default function RegisterPage() {
   }
 
   return (
-    <main className="flex-1 flex items-stretch min-h-[calc(100vh-48px)] select-none">
+    <main className="flex-1 flex items-stretch min-h-screen select-none">
       {/* ── Left panel — marketing (Visible on desktop, identical to LoginPage) ───────────────────── */}
       <div className="hidden lg:grid lg:grid-cols-12 gap-8 lg:w-[60%] xl:w-[65%] relative overflow-hidden bg-[#FAF9F7] dark:bg-[#0d0d0d] p-12 flex-col justify-between border-r border-border/40">
         {/* Ambient curves / blobs */}
@@ -191,22 +191,20 @@ export default function RegisterPage() {
         <div className="col-span-5 flex flex-col justify-between relative z-10 h-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <svg className="w-10 h-8 text-violet-600 dark:text-amber-500" viewBox="0 0 48 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <defs>
-                <pattern id="stripes_reg" width="4" height="4" patternTransform="rotate(45 0 0)" patternUnits="userSpaceOnUse">
-                  <line x1="0" y1="0" x2="0" y2="4" stroke="currentColor" strokeWidth="1.5" />
-                </pattern>
-                <mask id="intersection_reg">
-                  <circle cx="32" cy="16" r="13" fill="white" />
-                </mask>
-              </defs>
-              <circle cx="16" cy="16" r="13" stroke="currentColor" strokeWidth="2.5" />
-              <circle cx="32" cy="16" r="13" stroke="currentColor" strokeWidth="2.5" className="opacity-60" />
-              <circle cx="16" cy="16" r="13" fill="url(#stripes_reg)" mask="url(#intersection_reg)" />
-            </svg>
-            <div className="flex items-baseline">
-              <span className="font-display font-bold text-lg text-slate-900 dark:text-white tracking-tight">Removing</span>
-              <span className="font-display font-bold text-lg text-violet-600 dark:text-amber-500 tracking-tight">Background.io</span>
+            <span className="w-10 h-10 rounded-xl bg-[#7C3AED] dark:bg-[#F59E0B] text-white flex items-center justify-center shrink-0 shadow-md">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="w-5 h-5">
+                <circle cx="6" cy="6" r="2.5" />
+                <circle cx="6" cy="18" r="2.5" />
+                <path d="M8.12 8.12 20 4" />
+                <path d="M8.5 15.5 20 20" />
+                <path d="M8.12 8.12 12 12" />
+                <path d="M12 12 8.5 15.5" />
+              </svg>
+            </span>
+            <div className="flex items-baseline gap-0.5">
+              <span className="font-display font-bold text-xl text-slate-900 dark:text-white tracking-tight">BG</span>
+              <span className="font-display font-bold text-xl text-[#7C3AED] dark:text-[#F59E0B] tracking-tight">.</span>
+              <span className="font-display font-bold text-xl text-slate-900 dark:text-white tracking-tight">Remover</span>
             </div>
           </div>
 
@@ -309,7 +307,7 @@ export default function RegisterPage() {
               <span className="absolute top-3 left-3 bg-black/40 text-white text-[10px] font-semibold px-2.5 py-1 rounded-md backdrop-blur-sm shadow-sm">
                 Original
               </span>
-              <span className="absolute top-3 right-3 bg-violet-600 dark:bg-amber-600 text-white text-[10px] font-semibold px-2.5 py-1 rounded-md shadow-sm">
+              <span className="absolute top-3 right-3 bg-[#7C3AED] dark:bg-[#F59E0B] text-white text-[10px] font-semibold px-2.5 py-1 rounded-md shadow-sm">
                 Background Removed
               </span>
 
@@ -344,7 +342,7 @@ export default function RegisterPage() {
             </h1>
             <p className="text-secondary text-sm">
               Already have an account?{' '}
-              <Link to="/login" className="text-magenta hover:underline font-medium">
+              <Link to="/login" className="text-[#7C3AED] dark:text-[#F59E0B] hover:underline font-medium">
                 Sign in
               </Link>
             </p>

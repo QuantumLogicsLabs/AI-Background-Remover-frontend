@@ -48,7 +48,7 @@ export default function ResetPasswordPage() {
   // ── No token in URL ──────────────────────────────────────────────────────
   if (!token) {
     return (
-      <main className="flex-1 flex items-center justify-center px-4 py-16">
+      <main className="flex-1 flex items-center justify-center px-4 py-16 min-h-screen">
         <div className="w-full max-w-sm flex flex-col gap-8">
           <div className="text-center flex flex-col gap-2">
             <h1 className="text-3xl font-display font-bold text-primary tracking-tight">
@@ -90,7 +90,7 @@ export default function ResetPasswordPage() {
   }
 
   return (
-    <main className="flex-1 flex items-center justify-center px-4 py-16">
+    <main className="flex-1 flex items-center justify-center px-4 py-16 min-h-screen">
       <div className="w-full max-w-sm flex flex-col gap-8">
 
         {/* Header */}

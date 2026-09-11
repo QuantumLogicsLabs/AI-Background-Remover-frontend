@@ -28,7 +28,7 @@ export default function ForgotPasswordPage() {
   }
 
   return (
-    <main className="flex-1 flex items-center justify-center px-4 py-16">
+    <main className="flex-1 flex items-center justify-center px-4 py-16 min-h-screen">
       <div className="w-full max-w-sm flex flex-col gap-8">
 
         {/* Header */}

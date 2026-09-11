@@ -65,8 +65,22 @@ export function ThemeSettingsProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const root = document.documentElement;
+    // Never apply accent overrides on auth pages — they use a fixed violet palette
+    if (root.hasAttribute('data-auth-page')) return
     root.setAttribute('data-accent', accent);
     localStorage.setItem(ACCENT_KEY, accent);
+  }, [accent]);
+
+  // When navigating away from an auth page, reapply the saved accent
+  useEffect(() => {
+    const handler = () => {
+      const root = document.documentElement
+      if (!root.hasAttribute('data-auth-page')) {
+        root.setAttribute('data-accent', accent)
+      }
+    }
+    window.addEventListener('reapply-accent', handler)
+    return () => window.removeEventListener('reapply-accent', handler)
   }, [accent]);
 
   useEffect(() => {
