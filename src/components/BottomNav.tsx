@@ -22,6 +22,21 @@ const MOBILE_NAV_ITEMS = [
     icon: (<span className="text-xl leading-none">🕐</span>),
   },
   {
+    to: '/similarity-search',
+    label: 'Similar',
+    icon: (<span className="text-xl leading-none">🔗</span>),
+  },
+  {
+    to: '/categorization',
+    label: 'Categorize',
+    icon: (<span className="text-xl leading-none">🏷️</span>),
+  },
+  {
+    to: '/duplicate-detection',
+    label: 'Duplicates',
+    icon: (<span className="text-xl leading-none">🔄</span>),
+  },
+  {
     to: '/settings',
     label: 'Settings',
     icon: (<span className="text-xl leading-none">⚙️</span>),
@@ -32,7 +47,7 @@ export default function BottomNav() {
   return (
     <nav
       aria-label="Mobile navigation"
-      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface border-t border-border px-2 py-1.5 flex items-center justify-around shadow-2xl safe-area-pb"
+      className="md:hidden fixed bottom-0 left-0 right-0 z-50 bg-surface border-t border-border px-2 py-1.5 flex items-center overflow-x-auto no-scrollbar shadow-2xl safe-area-pb"
       style={{ backdropFilter: 'blur(12px)', backgroundColor: 'var(--bg-surface)' }}
     >
       {MOBILE_NAV_ITEMS.map((item) => (
@@ -40,7 +55,7 @@ export default function BottomNav() {
           key={item.to}
           to={item.to}
           className={({ isActive }) =>
-            `flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl text-[10px] font-medium transition-all ${
+            `flex flex-col items-center justify-center gap-1 py-1 px-3 rounded-xl text-[10px] font-medium transition-all shrink-0 ${
               isActive
                 ? 'text-magenta font-semibold scale-105'
                 : 'text-secondary hover:text-primary'
