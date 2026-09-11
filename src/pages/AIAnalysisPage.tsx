@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import UploadZone from '../components/UploadZone'
 import { Skeleton } from '../components/Skeleton'
@@ -52,37 +52,87 @@ function AnalysisSkeleton() {
   return (
     <div className="flex flex-col gap-6 animate-fade-up" aria-hidden="true">
       {/* Scores */}
-      <div className="p-5 rounded-2xl border border-border bg-surface">
-        <Skeleton className="w-32 h-4 mb-4 rounded" />
+      <div className="p-5 rounded-2xl border border-border bg-surface shadow-sm">
+        <Skeleton className="w-32 h-4 mb-4 rounded !bg-border" />
         <div className="flex flex-col gap-3">
           {Array.from({ length: 5 }).map((_, i) => (
             <div key={i} className="flex flex-col gap-1.5">
               <div className="flex justify-between">
-                <Skeleton className="w-24 h-3 rounded" />
-                <Skeleton className="w-8 h-3 rounded" />
+                <Skeleton className="w-24 h-3 rounded !bg-border" />
+                <Skeleton className="w-8 h-3 rounded !bg-border" />
               </div>
-              <Skeleton className="w-full h-2 rounded-full" />
+              <Skeleton className="w-full h-2 rounded-full !bg-border" />
             </div>
           ))}
         </div>
       </div>
       {/* Palette */}
-      <div className="p-5 rounded-2xl border border-border bg-surface">
-        <Skeleton className="w-28 h-4 mb-4 rounded" />
+      <div className="p-5 rounded-2xl border border-border bg-surface shadow-sm">
+        <Skeleton className="w-28 h-4 mb-4 rounded !bg-border" />
         <div className="flex gap-3 flex-wrap">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Skeleton key={i} className="w-14 h-14 rounded-xl" />
+            <Skeleton key={i} className="w-14 h-14 rounded-xl !bg-border" />
           ))}
         </div>
       </div>
       {/* Info cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {Array.from({ length: 4 }).map((_, i) => (
-          <div key={i} className="p-4 rounded-xl border border-border bg-surface-raised flex flex-col gap-2">
-            <Skeleton className="w-20 h-3 rounded" />
-            <Skeleton className="w-full h-4 rounded" />
-            <Skeleton className="w-3/4 h-4 rounded" />
+          <div key={i} className="p-4 rounded-xl border border-border bg-surface flex flex-col gap-2">
+            <Skeleton className="w-20 h-3 rounded !bg-border" />
+            <Skeleton className="w-full h-4 rounded !bg-border" />
+            <Skeleton className="w-3/4 h-4 rounded !bg-border" />
           </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+// ── Analysing overlay shown on the preview panel ──────────────────────────────
+
+function AnalysingOverlay() {
+  const steps = ['Reading pixels…', 'Scoring quality…', 'Extracting palette…', 'Identifying subject…', 'Building insights…']
+  const [step, setStep] = useState(0)
+
+  useEffect(() => {
+    const id = setInterval(() => setStep(s => (s + 1) % steps.length), 1400)
+    return () => clearInterval(id)
+  }, [])
+
+  return (
+    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4 bg-surface/80 backdrop-blur-sm rounded-2xl z-10">
+      {/* Spinning ring */}
+      <div className="relative w-14 h-14">
+        <svg className="w-14 h-14 animate-spin" viewBox="0 0 56 56" fill="none">
+          <circle cx="28" cy="28" r="23" stroke="var(--border-strong)" strokeWidth="4" />
+          <path
+            d="M28 5 A23 23 0 0 1 51 28"
+            stroke="var(--accent-primary)"
+            strokeWidth="4"
+            strokeLinecap="round"
+          />
+        </svg>
+        <span className="absolute inset-0 flex items-center justify-center text-xl">🔍</span>
+      </div>
+
+      {/* Status text */}
+      <div className="flex flex-col items-center gap-1">
+        <p className="text-sm font-semibold text-primary">Analysing image…</p>
+        <p className="text-xs text-muted animate-pulse transition-all duration-500">{steps[step]}</p>
+      </div>
+
+      {/* Progress dots */}
+      <div className="flex gap-1.5">
+        {steps.map((_, i) => (
+          <span
+            key={i}
+            className="w-1.5 h-1.5 rounded-full transition-all duration-300"
+            style={{
+              backgroundColor: i <= step ? 'var(--accent-primary)' : 'var(--border-strong)',
+              transform: i === step ? 'scale(1.4)' : 'scale(1)',
+            }}
+          />
         ))}
       </div>
     </div>
@@ -200,12 +250,13 @@ export default function AIAnalysisPage() {
 
         {/* Image preview */}
         {previewUrl ? (
-          <div className="rounded-2xl border border-border overflow-hidden bg-surface shadow-sm flex items-center justify-center min-h-[220px]">
+          <div className="relative rounded-2xl border border-border overflow-hidden bg-surface shadow-sm flex items-center justify-center min-h-[220px]">
             <img
               src={previewUrl}
               alt="Uploaded preview"
-              className="w-full h-full object-contain max-h-[340px]"
+              className={`w-full h-full object-contain max-h-[340px] transition-all duration-300 ${loading ? 'opacity-30 blur-[2px]' : 'opacity-100'}`}
             />
+            {loading && <AnalysingOverlay />}
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-border bg-surface-raised flex items-center justify-center min-h-[220px]">

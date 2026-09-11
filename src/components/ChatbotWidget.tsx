@@ -9,7 +9,7 @@ import { useLocation } from 'react-router-dom'
 
 // ─── Mode Types ───────────────────────────────────────────────────────────────
 
-type Mode = 'chat' | 'analysis' | 'suggestions' | 'captions'
+type Mode = 'chat' | 'analysis' | 'suggestions' | 'captions' | 'history'
 
 type Position = 'bottom-right' | 'bottom-left' | 'top-right' | 'top-left'
 
@@ -18,6 +18,49 @@ interface ChatbotWidgetProps {
 }
 
 const MAX_CHARS = 2000
+
+// ─── Conversation History Persistence ────────────────────────────────────────
+
+const HISTORY_STORAGE_KEY = 'chatbot_conversation_history'
+const MAX_STORED_SESSIONS = 30
+
+interface StoredSession {
+  id: string                // unique session id
+  conversationId: string | null
+  messages: Message[]
+  startedAt: number         // epoch ms of first message
+  updatedAt: number         // epoch ms of last message
+  preview: string           // first user message, truncated
+}
+
+function loadStoredSessions(): StoredSession[] {
+  try {
+    const raw = localStorage.getItem(HISTORY_STORAGE_KEY)
+    return raw ? (JSON.parse(raw) as StoredSession[]) : []
+  } catch { return [] }
+}
+
+function saveSession(session: StoredSession) {
+  try {
+    const all = loadStoredSessions()
+    const idx = all.findIndex(s => s.id === session.id)
+    if (idx >= 0) all[idx] = session
+    else all.unshift(session)
+    // keep only the most recent MAX_STORED_SESSIONS
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(all.slice(0, MAX_STORED_SESSIONS)))
+  } catch { /* storage full — fail silently */ }
+}
+
+function deleteStoredSession(id: string) {
+  try {
+    const all = loadStoredSessions().filter(s => s.id !== id)
+    localStorage.setItem(HISTORY_STORAGE_KEY, JSON.stringify(all))
+  } catch { /* ignore */ }
+}
+
+function clearAllStoredSessions() {
+  try { localStorage.removeItem(HISTORY_STORAGE_KEY) } catch { /* ignore */ }
+}
 
 // ─── Smart Conversation Helpers ────────────────────────────────────────────
 
@@ -473,6 +516,10 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
   const [messages, setMessages] = useState<Message[]>([])
   const [conversationId, setConversationId] = useState<string | null>(null)
   const [historyLoaded, setHistoryLoaded] = useState(false)
+  const sessionIdRef = useRef<string>(`session-${Date.now()}-${Math.random().toString(36).slice(2)}`)
+  const [storedSessions, setStoredSessions] = useState<StoredSession[]>([])
+  const [historyExpanded, setHistoryExpanded] = useState<string | null>(null)
+  const [historySearchQuery, setHistorySearchQuery] = useState('')
   const location = useLocation()
   const currentPath = location.pathname
 
@@ -531,15 +578,35 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
 
   useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }) }, [messages, chatLoading])
 
+  // Persist active session to localStorage whenever messages change
+  useEffect(() => {
+    if (messages.length === 0) return
+    const userMessages = messages.filter(m => m.role === 'user')
+    if (userMessages.length === 0) return
+    const session: StoredSession = {
+      id: sessionIdRef.current,
+      conversationId,
+      messages,
+      startedAt: messages[0].timestamp,
+      updatedAt: messages[messages.length - 1].timestamp,
+      preview: userMessages[0].content.slice(0, 80),
+    }
+    saveSession(session)
+  }, [messages, conversationId])
+
   useEffect(() => {
     if (isOpen && mode === 'chat') setTimeout(() => chatInputRef.current?.focus(), 150)
     if (isOpen) setUnread(0)
+    // Refresh stored sessions whenever the history tab is opened
+    if (isOpen && mode === 'history') setStoredSessions(loadStoredSessions())
   }, [isOpen, mode])
 
   // Fetch persisted conversation once, the first time the widget is opened.
   useEffect(() => {
     if (!isOpen || historyLoaded) return
     setHistoryLoaded(true)
+    // Load all locally stored sessions right away
+    setStoredSessions(loadStoredSessions())
     chatService.getHistory()
       .then(res => {
         setConversationId(res.conversation_id)
@@ -619,6 +686,8 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
     setConversationId(null)
     setChatError(null)
     setPendingChatMessage(null)
+    // Start a fresh session ID so the next conversation is stored separately
+    sessionIdRef.current = `session-${Date.now()}-${Math.random().toString(36).slice(2)}`
   }
 
   const handleChatKey = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -753,6 +822,7 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
     { id: 'analysis', label: 'Analyze', color: 'emerald', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg> },
     { id: 'suggestions', label: 'Suggest', color: 'amber', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg> },
     { id: 'captions', label: 'Caption', color: 'violet', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" /></svg> },
+    { id: 'history', label: 'History', color: 'rose', icon: <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg> },
   ]
 
   const charCount = chatInput.length
@@ -1009,6 +1079,257 @@ const ChatbotWidget: React.FC<ChatbotWidgetProps> = ({
               <div className="h-full flex items-center justify-center py-8">
                 <p className="text-[11px] text-muted text-center">{activeFile ? 'Pick a style and generate captions.' : 'Upload an image to get started.'}</p>
               </div>
+            )}
+          </div>
+        </div>
+      )
+    }
+
+    if (mode === 'history') {
+      const allSessions = storedSessions
+      const filtered = historySearchQuery.trim()
+        ? allSessions.filter(s =>
+            s.preview.toLowerCase().includes(historySearchQuery.toLowerCase()) ||
+            s.messages.some(m => m.content.toLowerCase().includes(historySearchQuery.toLowerCase()))
+          )
+        : allSessions
+
+      // Group sessions by date label
+      function dateLabel(ts: number): string {
+        const d = new Date(ts)
+        const now = new Date()
+        const diffDays = Math.floor((now.getTime() - d.getTime()) / 86400000)
+        if (diffDays === 0) return 'Today'
+        if (diffDays === 1) return 'Yesterday'
+        if (diffDays < 7) return `${diffDays} days ago`
+        if (diffDays < 30) return `${Math.floor(diffDays / 7)} week${diffDays < 14 ? '' : 's'} ago`
+        return d.toLocaleDateString(undefined, { month: 'long', year: 'numeric' })
+      }
+
+      // Build grouped list preserving order
+      const grouped: { label: string; sessions: StoredSession[] }[] = []
+      for (const s of filtered) {
+        const lbl = dateLabel(s.updatedAt)
+        const existing = grouped.find(g => g.label === lbl)
+        if (existing) existing.sessions.push(s)
+        else grouped.push({ label: lbl, sessions: [s] })
+      }
+
+      const handleRestoreSession = (session: StoredSession) => {
+        setMessages(session.messages)
+        setConversationId(session.conversationId)
+        sessionIdRef.current = session.id
+        setMode('chat')
+      }
+
+      const handleDeleteSession = (id: string) => {
+        deleteStoredSession(id)
+        setStoredSessions(loadStoredSessions())
+        if (historyExpanded === id) setHistoryExpanded(null)
+      }
+
+      const handleClearAll = () => {
+        clearAllStoredSessions()
+        setStoredSessions([])
+        setHistoryExpanded(null)
+      }
+
+      return (
+        <div className="flex flex-col flex-1 overflow-hidden">
+          {/* Toolbar */}
+          <div className="px-3 pt-3 pb-2 shrink-0 flex flex-col gap-2">
+            {/* Search */}
+            <div className="relative">
+              <svg className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z" />
+              </svg>
+              <input
+                type="text"
+                value={historySearchQuery}
+                onChange={e => setHistorySearchQuery(e.target.value)}
+                placeholder="Search conversations…"
+                className="w-full pl-8 pr-3 py-2 bg-surface border border-border rounded-xl text-[12px] text-primary placeholder-muted outline-none focus:border-magenta focus:ring-1 focus:ring-magenta/30 transition-all"
+              />
+              {historySearchQuery && (
+                <button
+                  onClick={() => setHistorySearchQuery('')}
+                  className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted hover:text-danger transition-colors"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                </button>
+              )}
+            </div>
+            {/* Stats row */}
+            <div className="flex items-center justify-between px-0.5">
+              <span className="text-[10px] text-muted font-medium">
+                {filtered.length} conversation{filtered.length !== 1 ? 's' : ''}
+                {historySearchQuery ? ' found' : ' stored'}
+              </span>
+              {allSessions.length > 0 && (
+                <button
+                  onClick={handleClearAll}
+                  className="text-[10px] font-semibold text-muted hover:text-danger transition-colors flex items-center gap-1"
+                >
+                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                  Clear all
+                </button>
+              )}
+            </div>
+          </div>
+
+          {/* Sessions list */}
+          <div className="flex-1 overflow-y-auto px-3 pb-3 space-y-4 scrollbar-none">
+            {filtered.length === 0 ? (
+              <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
+                <div className="w-12 h-12 rounded-2xl bg-surface-raised border border-border flex items-center justify-center">
+                  <svg className="w-5 h-5 text-muted" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <div>
+                  <p className="text-[11px] font-semibold text-primary">
+                    {historySearchQuery ? 'No matches found' : 'No history yet'}
+                  </p>
+                  <p className="text-[10px] text-muted mt-0.5 max-w-[180px] leading-relaxed">
+                    {historySearchQuery
+                      ? 'Try a different search term.'
+                      : 'Start a chat — your conversations will appear here automatically.'}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              grouped.map(group => (
+                <div key={group.label}>
+                  {/* Date group header */}
+                  <div className="flex items-center gap-2 mb-1.5">
+                    <span className="text-[9.5px] font-black uppercase tracking-widest text-muted">{group.label}</span>
+                    <div className="flex-1 h-px bg-border" />
+                  </div>
+
+                  <div className="space-y-1.5">
+                    {group.sessions.map(session => {
+                      const isExpanded = historyExpanded === session.id
+                      const msgCount = session.messages.length
+                      const userCount = session.messages.filter(m => m.role === 'user').length
+                      const time = new Date(session.updatedAt).toLocaleTimeString(undefined, { hour: '2-digit', minute: '2-digit' })
+
+                      return (
+                        <div
+                          key={session.id}
+                          className="rounded-xl border border-border bg-surface overflow-hidden transition-all"
+                        >
+                          {/* Session header row — always visible */}
+                          <div className="flex items-start gap-2 px-3 py-2.5">
+                            {/* Icon */}
+                            <div className="w-7 h-7 rounded-lg bg-magenta/10 border border-magenta/20 flex items-center justify-center shrink-0 mt-0.5">
+                              <svg className="w-3.5 h-3.5 text-magenta" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                              </svg>
+                            </div>
+
+                            {/* Preview text + meta */}
+                            <div className="flex-1 min-w-0">
+                              <p className="text-[12px] font-semibold text-primary truncate leading-snug">
+                                {session.preview || 'Conversation'}
+                              </p>
+                              <p className="text-[10px] text-muted mt-0.5">
+                                {userCount} message{userCount !== 1 ? 's' : ''} · {msgCount} total · {time}
+                              </p>
+                            </div>
+
+                            {/* Action buttons */}
+                            <div className="flex items-center gap-1 shrink-0">
+                              {/* Restore / open in chat */}
+                              <button
+                                onClick={() => handleRestoreSession(session)}
+                                title="Restore this conversation"
+                                className="w-6 h-6 rounded-lg flex items-center justify-center text-muted hover:text-magenta hover:bg-magenta/10 transition-all"
+                              >
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                </svg>
+                              </button>
+
+                              {/* Expand / collapse */}
+                              <button
+                                onClick={() => setHistoryExpanded(isExpanded ? null : session.id)}
+                                title={isExpanded ? 'Collapse' : 'View messages'}
+                                className="w-6 h-6 rounded-lg flex items-center justify-center text-muted hover:text-primary hover:bg-surface-raised transition-all"
+                              >
+                                <svg
+                                  className={`w-3 h-3 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}
+                                  fill="none" viewBox="0 0 24 24" stroke="currentColor"
+                                >
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                                </svg>
+                              </button>
+
+                              {/* Delete */}
+                              <button
+                                onClick={() => handleDeleteSession(session.id)}
+                                title="Delete"
+                                className="w-6 h-6 rounded-lg flex items-center justify-center text-muted hover:text-danger hover:bg-danger/10 transition-all"
+                              >
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                </svg>
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Expanded message thread */}
+                          {isExpanded && (
+                            <div className="border-t border-border bg-surface-raised px-3 py-2 space-y-2 max-h-64 overflow-y-auto scrollbar-none">
+                              {session.messages.map((msg, idx) => (
+                                <div
+                                  key={idx}
+                                  className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}
+                                >
+                                  {msg.role === 'assistant' && (
+                                    <div className="w-5 h-5 rounded-md bg-teal/10 border border-teal/20 flex items-center justify-center shrink-0 mt-0.5">
+                                      <svg className="w-2.5 h-2.5 text-teal" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                      </svg>
+                                    </div>
+                                  )}
+                                  <div
+                                    className={`max-w-[78%] rounded-xl px-2.5 py-1.5 text-[11px] leading-relaxed ${
+                                      msg.role === 'user'
+                                        ? 'bg-magenta text-white rounded-tr-none'
+                                        : 'bg-surface border border-border text-secondary rounded-tl-none'
+                                    }`}
+                                  >
+                                    {msg.content.length > 200 ? msg.content.slice(0, 200) + '…' : msg.content}
+                                  </div>
+                                  {msg.role === 'user' && (
+                                    <div className="w-5 h-5 rounded-md bg-magenta/10 border border-magenta/20 flex items-center justify-center shrink-0 mt-0.5">
+                                      <svg className="w-2.5 h-2.5 text-magenta" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                      </svg>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                              {/* Restore CTA at bottom of thread */}
+                              <div className="pt-1">
+                                <button
+                                  onClick={() => handleRestoreSession(session)}
+                                  className="w-full py-1.5 rounded-lg bg-magenta/10 border border-magenta/20 text-[10px] font-bold text-magenta hover:bg-magenta/20 transition-all flex items-center justify-center gap-1.5"
+                                >
+                                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                                  </svg>
+                                  Continue this conversation
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
+              ))
             )}
           </div>
         </div>

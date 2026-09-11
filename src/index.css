@@ -21,6 +21,14 @@
     overflow-x: hidden;
   }
 
+  /* Allow the animated canvas to show through the root wrapper */
+  #root {
+    position: relative;
+    z-index: 1;
+    /* Slightly transparent so canvas orbs bleed through */
+    background-color: transparent;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-display);
     color: var(--text-primary);
