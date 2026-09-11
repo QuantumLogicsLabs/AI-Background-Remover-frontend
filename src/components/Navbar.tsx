@@ -5,43 +5,26 @@ import { useAuth } from '../hooks/useAuth'
 import { useThemeSettings, AccentTheme } from '../contexts/ThemeSettingsContext'
 import Tooltip from './Tooltip'
 
-// ── Nav item definitions ───────────────────────────────────────────────────
+// ── Primary nav items (always visible) ────────────────────────────────────
 const NAV_ITEMS = [
-  {
-    to: '/', label: 'Remove BG', end: true,
-    icon: (<span className="text-sm leading-none">✂️</span>),
-  },
-  {
-    to: '/enhance', label: 'Enhance', end: false,
-    icon: (<span className="text-sm leading-none">✨</span>),
-  },
-  {
-    to: '/shadow', label: 'Shadow', end: false,
-    icon: (<span className="text-sm leading-none">💡</span>),
-  },
-  {
-    to: '/recolor-and-eraser', label: 'Recolor', end: false,
-    icon: (<span className="text-sm leading-none">🎨</span>),
-  },
-  {
-    to: '/smart-crop', label: 'Crop', end: false,
-    icon: (<span className="text-sm leading-none">🔲</span>),
-  },
-  {
-    to: '/batch', label: 'Batch', end: false,
-    icon: (<span className="text-sm leading-none">📁</span>),
-  },
-  {
-    to: '/history', label: 'History', end: false,
-    icon: (<span className="text-sm leading-none">🕐</span>),
-  },
-  {
-    to: '/ai-analysis', label: 'AI Analysis', end: false,
-    icon: (<span className="text-sm leading-none">🔍</span>),
-  },
+  { to: '/',                   label: 'Remove BG',  end: true,  icon: '✂️' },
+  { to: '/enhance',            label: 'Enhance',    end: false, icon: '✨' },
+  { to: '/shadow',             label: 'Shadow',     end: false, icon: '💡' },
+  { to: '/recolor-and-eraser', label: 'Recolor',    end: false, icon: '🎨' },
+  { to: '/smart-crop',         label: 'Crop',       end: false, icon: '🔲' },
+  { to: '/batch',              label: 'Batch',      end: false, icon: '📁' },
+  { to: '/history',            label: 'History',    end: false, icon: '🕐' },
+  { to: '/ai-analysis',        label: 'AI Analysis',end: false, icon: '🔍' },
 ]
 
-function AppNavLink({ to, label, end, icon }: { to: string; label: string; end?: boolean; icon: React.ReactNode }) {
+// ── ML extras — live in the "More" dropdown ───────────────────────────────
+const ML_NAV_ITEMS = [
+  { to: '/similarity-search',   label: 'Similarity Search',  icon: '🔗', desc: 'Find visually similar images' },
+  { to: '/categorization',      label: 'Categorize',          icon: '🏷️', desc: 'Auto-classify image content'  },
+  { to: '/duplicate-detection', label: 'Duplicate Detection', icon: '🔄', desc: 'Detect exact & near duplicates' },
+]
+
+function AppNavLink({ to, label, end, icon }: { to: string; label: string; end?: boolean; icon: string }) {
   return (
     <NavLink
       to={to}
@@ -58,10 +41,9 @@ function AppNavLink({ to, label, end, icon }: { to: string; label: string; end?:
     >
       {({ isActive }) => (
         <>
-          <span className={isActive ? 'text-magenta' : 'text-muted'}>
+          <span className={`text-sm leading-none ${isActive ? 'text-magenta' : 'text-muted'}`}>
             {icon}
           </span>
-          {/* Hide labels on md, show on lg+ */}
           <span className="hidden lg:inline">{label}</span>
           {isActive && (
             <span
@@ -72,6 +54,97 @@ function AppNavLink({ to, label, end, icon }: { to: string; label: string; end?:
         </>
       )}
     </NavLink>
+  )
+}
+
+// ── "More" dropdown for ML features ──────────────────────────────────────
+function MLMoreDropdown() {
+  const [open, setOpen] = useState(false)
+  const ref = useRef<HTMLDivElement>(null)
+  const location = useLocation()
+
+  const isMLActive = ML_NAV_ITEMS.some((item) => location.pathname === item.to)
+
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false)
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
+
+  // Close on route change
+  useEffect(() => { setOpen(false) }, [location.pathname])
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="true"
+        aria-expanded={open}
+        className={`relative flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium
+          transition-all duration-150 whitespace-nowrap select-none
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-magenta/50 ${
+            isMLActive
+              ? 'text-magenta bg-magenta/10 font-semibold shadow-xs'
+              : 'text-secondary hover:text-primary hover:bg-surface-raised'
+          }`}
+      >
+        <span className={`text-sm leading-none ${isMLActive ? 'text-magenta' : 'text-muted'}`}>🤖</span>
+        <span className="hidden lg:inline">ML Tools</span>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 16 16"
+          fill="currentColor"
+          className={`w-3 h-3 ml-0.5 transition-transform duration-150 ${open ? 'rotate-180' : ''}`}
+          aria-hidden="true"
+        >
+          <path fillRule="evenodd" d="M4.22 6.22a.75.75 0 011.06 0L8 8.94l2.72-2.72a.75.75 0 111.06 1.06l-3.25 3.25a.75.75 0 01-1.06 0L4.22 7.28a.75.75 0 010-1.06z" clipRule="evenodd" />
+        </svg>
+        {isMLActive && (
+          <span
+            className="absolute bottom-0 left-1/2 -translate-x-1/2 w-3 h-0.5 rounded-full bg-gradient-to-r from-magenta to-teal"
+            aria-hidden="true"
+          />
+        )}
+      </button>
+
+      {open && (
+        <div className="absolute left-0 top-full mt-2 w-56 rounded-xl border border-border bg-surface shadow-xl z-50 overflow-hidden animate-scale-in">
+          <div className="px-3 py-2 border-b border-border">
+            <p className="text-[10px] font-bold text-muted uppercase tracking-wider">ML Features</p>
+          </div>
+          <div className="p-1.5 flex flex-col gap-0.5">
+            {ML_NAV_ITEMS.map((item) => {
+              const active = location.pathname === item.to
+              return (
+                <NavLink
+                  key={item.to}
+                  to={item.to}
+                  className={`flex items-start gap-3 px-3 py-2.5 rounded-lg transition-colors ${
+                    active
+                      ? 'bg-magenta/10 text-magenta'
+                      : 'text-secondary hover:text-primary hover:bg-surface-raised'
+                  }`}
+                >
+                  <span className="text-base leading-none mt-0.5 shrink-0">{item.icon}</span>
+                  <div className="flex flex-col gap-0.5">
+                    <span className={`text-xs font-semibold leading-none ${active ? 'text-magenta' : 'text-primary'}`}>
+                      {item.label}
+                    </span>
+                    <span className="text-[10px] text-muted leading-snug">{item.desc}</span>
+                  </div>
+                  {active && (
+                    <span className="ml-auto shrink-0 w-1.5 h-1.5 rounded-full bg-magenta mt-1" />
+                  )}
+                </NavLink>
+              )
+            })}
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -233,6 +306,7 @@ export default function Navbar() {
                   icon={item.icon}
                 />
               ))}
+              <MLMoreDropdown />
             </nav>
           </div>
         )}
