@@ -15,6 +15,7 @@ import ProtectedRoute from './components/ProtectedRoute'
 import PageLoader from './components/PageLoader'
 import BottomNav from './components/BottomNav'
 import ShortcutsModal from './components/ShortcutsModal'
+import AnimatedBackground from './components/AnimatedBackground'
 
 // ── Lazy-loaded pages ───────────────────────────────────────────────────────
 const LoginPage = lazy(() => import('./pages/LoginPage'))
@@ -56,9 +57,10 @@ function MainLayout() {
   const isAuthPage = authPages.includes(location.pathname)
 
   return (
-    <div className="min-h-screen bg-page flex flex-col selection:bg-magenta selection:text-white">
+    <div className="min-h-screen flex flex-col selection:bg-magenta selection:text-white relative z-[1]">
+      <AnimatedBackground />
       {!isAuthPage && <Navbar />}
-      <div className="flex-1 flex w-full">
+      <div className="flex-1 flex w-full relative z-[1]">
         <main className="flex-1 min-w-0 pb-16 md:pb-6">
           <Suspense fallback={<PageLoader />}>
             <Routes>
