@@ -254,13 +254,34 @@ export default function DuplicateDetectionPage() {
         </div>
 
         {previewUrl ? (
-          <div className="relative rounded-2xl border border-border overflow-hidden bg-surface shadow-sm flex items-center justify-center min-h-[220px]">
+          <div className="relative rounded-2xl border-2 border-accent-primary/40 overflow-hidden bg-surface shadow-md flex flex-col min-h-[220px]">
             <img
               src={previewUrl}
               alt="Uploaded preview"
-              className={`w-full h-full object-contain max-h-[340px] transition-all duration-300 ${loading ? 'opacity-30 blur-[2px]' : 'opacity-100'}`}
+              className={`w-full h-full object-contain max-h-[320px] transition-all duration-300 ${loading ? 'opacity-30 blur-[2px]' : 'opacity-100'}`}
             />
             {loading && <ScanningOverlay />}
+            {/* Confirmation banner — only when not scanning */}
+            {!loading && (
+              <div className="absolute top-2 left-2 right-2 flex items-center gap-2 px-3 py-1.5 rounded-lg bg-success/90 backdrop-blur-sm shadow-sm">
+                <svg className="w-4 h-4 text-white shrink-0" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                </svg>
+                <span className="text-white text-xs font-semibold truncate">
+                  ✓ Image loaded &amp; ready
+                </span>
+              </div>
+            )}
+            {/* File info footer */}
+            <div className="px-3 py-2 border-t border-border bg-surface-raised flex items-center gap-3">
+              <span className="text-[11px] text-muted font-mono truncate">{file?.name}</span>
+              <span className="text-[11px] text-muted shrink-0">
+                {file ? (file.size / 1024 < 1024
+                  ? `${(file.size / 1024).toFixed(1)} KB`
+                  : `${(file.size / (1024 * 1024)).toFixed(1)} MB`)
+                : ''}
+              </span>
+            </div>
           </div>
         ) : (
           <div className="rounded-2xl border border-dashed border-border bg-surface-raised flex items-center justify-center min-h-[220px]">
@@ -276,7 +297,7 @@ export default function DuplicateDetectionPage() {
             type="button"
             onClick={handleCheck}
             disabled={loading || indexing}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-accent-primary text-white text-sm font-semibold hover:opacity-90 disabled:opacity-50 transition-opacity shadow-sm"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-magenta text-white text-sm font-bold hover:bg-magenta-hover disabled:opacity-50 transition-colors shadow-md"
           >
             {loading ? (
               <>
@@ -294,7 +315,7 @@ export default function DuplicateDetectionPage() {
             type="button"
             onClick={handleIndex}
             disabled={loading || indexing}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border border-border bg-surface text-sm font-semibold text-secondary hover:text-primary hover:border-accent-primary/40 disabled:opacity-50 transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-xl border-2 border-magenta text-magenta text-sm font-bold hover:bg-magenta hover:text-white disabled:opacity-50 transition-colors"
           >
             {indexing ? (
               <>

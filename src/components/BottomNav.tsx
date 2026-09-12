@@ -27,16 +27,6 @@ const MOBILE_NAV_ITEMS = [
     icon: (<span className="text-xl leading-none">🔗</span>),
   },
   {
-    to: '/categorization',
-    label: 'Categorize',
-    icon: (<span className="text-xl leading-none">🏷️</span>),
-  },
-  {
-    to: '/duplicate-detection',
-    label: 'Duplicates',
-    icon: (<span className="text-xl leading-none">🔄</span>),
-  },
-  {
     to: '/settings',
     label: 'Settings',
     icon: (<span className="text-xl leading-none">⚙️</span>),
