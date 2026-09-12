@@ -1,6 +1,6 @@
 import apiClient from './apiClient'
 
-// ── Similarity Search ────────────────────────────────────────────────────────
+// ── Similarity Search (cross-image library) ───────────────────────────────────
 
 export interface SimilarityResult {
   image_id: string
@@ -20,6 +20,38 @@ export interface IndexImageResponse {
   filename: string
   total_indexed: number
   message: string
+}
+
+// ── Intra-Image Similar Object Detection ──────────────────────────────────────
+
+/**
+ * One group of visually similar objects/patterns found within the image.
+ * e.g. "butterflies appear 3 times — top-left, center, bottom-right"
+ */
+export interface DetectedObjectGroup {
+  /** 0-based index — maps to a colour in the UI */
+  group_index: number
+  /** How many times this object/pattern appears in the image */
+  instance_count: number
+  /** Plain-English position of each instance, e.g. ["top-left", "center"] */
+  locations: string[]
+  /** Mean similarity between instances, 0–1 */
+  avg_similarity: number
+  /** Base64 JPEG thumbnail of the representative patch */
+  thumbnail_b64: string
+  /** [R, G, B] accent colour for this group */
+  color_rgb: [number, number, number]
+}
+
+export interface SimilarObjectsResponse {
+  image_width: number
+  image_height: number
+  /** One entry per type of similar object detected */
+  groups: DetectedObjectGroup[]
+  /** Base64 PNG with one labelled box per instance */
+  annotated_image_b64: string
+  /** Plain-English summary, e.g. "Found 3 types of similar objects (7 instances total)" */
+  summary: string
 }
 
 // ── Categorization ────────────────────────────────────────────────────────────
@@ -87,6 +119,17 @@ export const mlService = {
   async getSimilarityCount(): Promise<{ total_indexed: number }> {
     const { data } = await apiClient.get<{ user_id: string; total_indexed: number }>(
       '/api/ml/similarity/count',
+    )
+    return data
+  },
+
+  /** Detect visually similar objects / repeated regions within a single image. */
+  async findSimilarObjects(file: File): Promise<SimilarObjectsResponse> {
+    const fd = new FormData()
+    fd.append('file', file)
+    const { data } = await apiClient.post<SimilarObjectsResponse>(
+      '/api/ml/similarity/objects',
+      fd,
     )
     return data
   },

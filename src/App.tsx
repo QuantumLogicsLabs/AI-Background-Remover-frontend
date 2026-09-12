@@ -33,8 +33,6 @@ const HistoryPage = lazy(() => import('./pages/HistoryPage'))
 const SettingsPage = lazy(() => import('./pages/SettingsPage'))
 const AIAnalysisPage = lazy(() => import('./pages/AIAnalysisPage'))
 const SimilaritySearchPage = lazy(() => import('./pages/SimilaritySearchPage'))
-const CategorizationPage = lazy(() => import('./pages/CategorizationPage'))
-const DuplicateDetectionPage = lazy(() => import('./pages/DuplicateDetectionPage'))
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'))
 
 // ── ChatbotWidget ──────────────────────────────────────────────────────────
@@ -99,8 +97,6 @@ function MainLayout() {
               <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
               <Route path="/ai-analysis" element={<ProtectedRoute><AIAnalysisPage /></ProtectedRoute>} />
               <Route path="/similarity-search" element={<ProtectedRoute><SimilaritySearchPage /></ProtectedRoute>} />
-              <Route path="/categorization" element={<ProtectedRoute><CategorizationPage /></ProtectedRoute>} />
-              <Route path="/duplicate-detection" element={<ProtectedRoute><DuplicateDetectionPage /></ProtectedRoute>} />
 
               {/* Catch-all */}
               <Route path="*" element={<NotFoundPage />} />
