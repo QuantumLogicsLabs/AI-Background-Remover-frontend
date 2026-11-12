@@ -50,13 +50,26 @@ const FEATURES = [
   },
 ]
 
-// Password strength helper
-function getStrength(pw: string): { label: string; color: string; width: string } {
-  if (pw.length === 0) return { label: '', color: 'bg-border', width: 'w-0' }
-  if (pw.length < 6) return { label: 'Weak', color: 'bg-danger', width: 'w-1/4' }
-  if (pw.length < 10) return { label: 'Fair', color: 'bg-amber-400', width: 'w-1/2' }
-  if (pw.length < 14) return { label: 'Good', color: 'bg-teal', width: 'w-3/4' }
-  return { label: 'Strong', color: 'bg-teal', width: 'w-full' }
+function randomIndex(max: number): number {
+  const value = new Uint32Array(1)
+  window.crypto.getRandomValues(value)
+  return value[0] % max
+}
+
+function generateSuggestedPassword(): string {
+  const lower = 'abcdefghijkmnopqrstuvwxyz'
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
+  const digits = '23456789'
+  const special = '!@#$%^&*()-_=+[]{}?'
+  const all = lower + upper + digits + special
+  const chars = [lower, upper, digits, special].map((set) => set[randomIndex(set.length)])
+
+  while (chars.length < 16) chars.push(all[randomIndex(all.length)])
+  for (let i = chars.length - 1; i > 0; i -= 1) {
+    const j = randomIndex(i + 1)
+    ;[chars[i], chars[j]] = [chars[j], chars[i]]
+  }
+  return chars.join('')
 }
 
 export default function RegisterPage() {
@@ -67,12 +80,17 @@ export default function RegisterPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [suggestedPassword, setSuggestedPassword] = useState(generateSuggestedPassword)
+  const [showPasswordSuggestion, setShowPasswordSuggestion] = useState(false)
+  const [passwordMode, setPasswordMode] = useState<'suggested-pending' | 'suggested' | 'custom' | null>(null)
   const [confirm, setConfirm] = useState('')
   const [busy, setBusy] = useState(false)
   const [showPwd, setShowPwd] = useState(false)
 
   // ── Comparison Slider State & Logic ──────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null)
+  const passwordInputRef = useRef<HTMLInputElement>(null)
+  const skipNextPasswordFocus = useRef(false)
   const [sliderPosition, setSliderPosition] = useState(50)
   const [isDragging, setIsDragging] = useState(false)
 
@@ -124,8 +142,17 @@ export default function RegisterPage() {
   }, [isDragging])
 
   const passwordMismatch = confirm.length > 0 && password !== confirm
-  const passwordWeak = password.length > 0 && password.length < 8
-  const strength = getStrength(password)
+  const passwordChecks = {
+    length: password.length >= 8,
+    alphanumeric: /[A-Za-z]/.test(password) && /\d/.test(password),
+    special: /[^A-Za-z0-9]/.test(password),
+  }
+  const passwordValid = Object.values(passwordChecks).every(Boolean)
+  const strength = password.length === 0
+    ? { label: '', color: 'bg-border', width: 'w-0' }
+    : !passwordChecks.length || !passwordChecks.alphanumeric || !passwordChecks.special
+      ? { label: 'Needs more requirements', color: 'bg-amber-400', width: 'w-1/2' }
+      : { label: 'Strong', color: 'bg-teal', width: 'w-full' }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -133,8 +160,8 @@ export default function RegisterPage() {
       showToast('Passwords do not match.', 'error')
       return
     }
-    if (passwordWeak) {
-      showToast('Password must be at least 8 characters.', 'error')
+    if (!passwordValid) {
+      showToast('Use at least 8 characters, including a letter, a number, and a special character.', 'error')
       return
     }
     setBusy(true)
@@ -395,15 +422,47 @@ export default function RegisterPage() {
               <label htmlFor="reg-password" className="text-xs font-semibold text-secondary uppercase tracking-wider">
                 Password
               </label>
-              <div className="relative">
+              <div
+                className="relative"
+                onBlur={(event) => {
+                  if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+                    setShowPasswordSuggestion(false)
+                    if (passwordMode === 'suggested-pending') {
+                      setPassword('')
+                      setConfirm('')
+                      setPasswordMode(null)
+                      setShowPwd(false)
+                    }
+                  }
+                }}
+              >
                 <input
+                  ref={passwordInputRef}
                   id="reg-password"
                   type={showPwd ? 'text' : 'password'}
                   required
                   autoComplete="new-password"
                   placeholder="Min. 8 characters"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onFocus={() => {
+                    if (skipNextPasswordFocus.current) {
+                      skipNextPasswordFocus.current = false
+                      return
+                    }
+                    if (!password) {
+                      setPassword(suggestedPassword)
+                      setConfirm(suggestedPassword)
+                      setPasswordMode('suggested-pending')
+                      setShowPwd(true)
+                    }
+                    setShowPasswordSuggestion(true)
+                  }}
+                  onChange={(e) => {
+                    setPassword(e.target.value)
+                    if (passwordMode === 'suggested' || passwordMode === 'suggested-pending') setConfirm('')
+                    setPasswordMode('custom')
+                    setShowPasswordSuggestion(false)
+                  }}
                   disabled={busy}
                   className="w-full px-3.5 py-2.5 pr-10 rounded-lg border border-border bg-surface text-sm text-primary placeholder:text-muted focus:outline-none focus:border-magenta disabled:opacity-50"
                 />
@@ -415,7 +474,63 @@ export default function RegisterPage() {
                 >
                   {showPwd ? 'Hide' : 'Show'}
                 </button>
+                {showPasswordSuggestion && (
+                  <div
+                    role="dialog"
+                    aria-label="Suggested password"
+                    className="absolute inset-x-0 top-full z-30 mt-2 rounded-xl border border-border bg-surface p-3 shadow-xl flex flex-col gap-2"
+                  >
+                    <span className="absolute -top-1.5 left-8 h-3 w-3 rotate-45 border-l border-t border-border bg-surface" aria-hidden="true" />
+                    <div className="flex items-start gap-3 px-1 pt-1">
+                      <svg className="mt-1 h-5 w-5 shrink-0 text-magenta" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                        <circle cx="8" cy="15" r="4" />
+                        <path strokeLinecap="round" strokeLinejoin="round" d="m11 12 8-8m-2 2 3 3m-6-1 3 3" />
+                      </svg>
+                      <div>
+                        <p className="text-base font-medium leading-6 text-primary">A strong password was created for you</p>
+                        <p className="mt-2 text-sm leading-5 text-secondary">The suggestion is shown in the password field. Use it, or choose a password of your own.</p>
+                      </div>
+                    </div>
+                    <div className="mt-2 flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (passwordMode !== 'custom') {
+                            setPassword('')
+                            setConfirm('')
+                          }
+                          setPasswordMode('custom')
+                          setShowPwd(false)
+                          setShowPasswordSuggestion(false)
+                          skipNextPasswordFocus.current = true
+                          window.setTimeout(() => passwordInputRef.current?.focus(), 0)
+                        }}
+                        disabled={busy}
+                        className="rounded-full border border-border-strong bg-surface px-4 py-2.5 text-xs font-semibold text-primary hover:bg-surface-raised"
+                      >
+                        Choose your own
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setPasswordMode('suggested')
+                          setShowPasswordSuggestion(false)
+                        }}
+                        disabled={busy}
+                        className="rounded-full bg-[#756000] px-4 py-2.5 text-xs font-semibold text-white hover:bg-[#5f4d00]"
+                      >
+                        Use strong password
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
+
+              <ul className="flex flex-col gap-1 text-[11px] text-secondary" aria-label="Password requirements">
+                <li className={passwordChecks.length ? 'text-teal' : ''}>{passwordChecks.length ? '✓' : '•'} At least 8 characters</li>
+                <li className={passwordChecks.alphanumeric ? 'text-teal' : ''}>{passwordChecks.alphanumeric ? '✓' : '•'} At least one letter and one number</li>
+                <li className={passwordChecks.special ? 'text-teal' : ''}>{passwordChecks.special ? '✓' : '•'} At least one special character</li>
+              </ul>
 
               {/* Password strength meter */}
               {password.length > 0 && (
@@ -452,7 +567,7 @@ export default function RegisterPage() {
             {/* Submit */}
             <button
               type="submit"
-              disabled={busy || !name.trim() || !email.trim() || !password || passwordMismatch}
+              disabled={busy || !name.trim() || !email.trim() || !passwordValid || passwordMismatch || passwordMode === 'suggested-pending'}
               className="btn-primary w-full py-3 mt-2 font-bold text-sm shadow-md"
             >
               {busy ? 'Creating Account…' : 'Create Free Account'}
