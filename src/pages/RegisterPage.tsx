@@ -80,7 +80,7 @@ export default function RegisterPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [suggestedPassword, setSuggestedPassword] = useState(generateSuggestedPassword)
+  const [suggestedPassword, _setSuggestedPassword] = useState(generateSuggestedPassword)
   const [showPasswordSuggestion, setShowPasswordSuggestion] = useState(false)
   const [passwordMode, setPasswordMode] = useState<'suggested-pending' | 'suggested' | 'custom' | null>(null)
   const [confirm, setConfirm] = useState('')
