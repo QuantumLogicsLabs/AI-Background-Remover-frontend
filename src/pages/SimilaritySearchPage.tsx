@@ -235,8 +235,17 @@ export default function SimilaritySearchPage() {
     setLoading(true); setError(null); setResult(null)
     try {
       setResult(await mlService.findSimilarObjects(file))
-    } catch (e: any) {
-      setError(e?.response?.data?.detail || e?.message || 'Analysis failed.')
+    } catch (e: unknown) {
+      let msg = 'Analysis failed.'
+      if (typeof e === 'object' && e !== null) {
+        const errorObj = e as { response?: { data?: { detail?: unknown } }; message?: unknown }
+        if (typeof errorObj.response?.data?.detail === 'string') {
+          msg = errorObj.response.data.detail
+        } else if (typeof errorObj.message === 'string') {
+          msg = errorObj.message
+        }
+      }
+      setError(msg)
     } finally {
       setLoading(false)
     }

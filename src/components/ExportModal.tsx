@@ -63,7 +63,7 @@ export default function ExportModal({ downloadUrl, filename, isOpen, onClose }: 
       setQuality(DEFAULT_QUALITY)
       setTimeout(() => closeRef.current?.focus(), 50)
     }
-  }, [isOpen])
+  }, [isOpen, brandKit.defaultExportFormat])
 
   // Escape key
   useEffect(() => {

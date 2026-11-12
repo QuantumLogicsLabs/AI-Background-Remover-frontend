@@ -5,7 +5,7 @@ import BackgroundPicker from '../components/BackgroundPicker'
 import QualityToggle from '../components/QualityToggle'
 import ImageCanvas from '../components/ImageCanvas'
 import SendToMenu from '../components/SendToMenu'
-import { useReplaceBg } from '../hooks/useReplaceBg'
+import { useReplaceBg, DEFAULT_BG_SETTINGS, type BgSettings } from '../hooks/useReplaceBg'
 import { useActiveImage } from '../contexts/ActiveImageContext'
 
 // ── Step indicator ─────────────────────────────────────────────────────────
@@ -115,8 +115,11 @@ export default function ReplaceBgPage() {
         sessionStorage.removeItem('bg_preset_settings')
         try {
           const parsed = JSON.parse(cachedPreset)
-          Object.entries(parsed).forEach(([key, val]) => {
-            updateSetting(key as any, val)
+          Object.entries(parsed as Partial<BgSettings>).forEach(([key, val]) => {
+            if (key in DEFAULT_BG_SETTINGS) {
+              const k = key as keyof BgSettings
+              (updateSetting as (key: keyof BgSettings, value: BgSettings[keyof BgSettings]) => void)(k, val as BgSettings[keyof BgSettings])
+            }
           })
           
           const autoApply = sessionStorage.getItem('bg_preset_auto_apply') === 'true'
@@ -157,8 +160,11 @@ export default function ReplaceBgPage() {
       if (customEvent.detail?.type === 'apply_bg') {
         const parsed = customEvent.detail.data
         if (parsed) {
-          Object.entries(parsed).forEach(([key, val]) => {
-            updateSetting(key as any, val)
+          Object.entries(parsed as Partial<BgSettings>).forEach(([key, val]) => {
+            if (key in DEFAULT_BG_SETTINGS) {
+              const k = key as keyof BgSettings
+              (updateSetting as (key: keyof BgSettings, value: BgSettings[keyof BgSettings]) => void)(k, val as BgSettings[keyof BgSettings])
+            }
           })
         }
         if (activeFile) {

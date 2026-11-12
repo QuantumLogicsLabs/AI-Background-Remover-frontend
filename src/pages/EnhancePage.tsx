@@ -4,7 +4,7 @@ import ImageCanvas from '../components/ImageCanvas'
 import DownloadButton from '../components/DownloadButton'
 import EnhancementControls from '../components/EnhancementControls'
 import SendToMenu from '../components/SendToMenu'
-import { useEnhance } from '../hooks/useEnhance'
+import { useEnhance, type EnhanceSettings } from '../hooks/useEnhance'
 import { useActiveImage } from '../contexts/ActiveImageContext'
 
 const FEATURE_CHIPS = [
@@ -44,8 +44,11 @@ export default function EnhancePage() {
         try {
           const parsed = JSON.parse(cachedPreset)
           const mergedSettings = { ...settings, ...parsed }
-          Object.entries(parsed).forEach(([key, val]) => {
-            updateSetting(key as any, val)
+          Object.entries(parsed as Partial<EnhanceSettings>).forEach(([key, val]) => {
+            if (key in settings) {
+              const k = key as keyof EnhanceSettings
+              (updateSetting as (key: keyof EnhanceSettings, value: EnhanceSettings[keyof EnhanceSettings]) => void)(k, val as EnhanceSettings[keyof EnhanceSettings])
+            }
           })
           // Auto-run with preset settings!
           enhance(activeFile, mergedSettings)
@@ -66,8 +69,11 @@ export default function EnhancePage() {
       if (customEvent.detail?.type === 'apply_enhance') {
         const parsed = customEvent.detail.data
         const mergedSettings = { ...settings, ...parsed }
-        Object.entries(parsed).forEach(([key, val]) => {
-          updateSetting(key as any, val)
+        Object.entries(parsed as Partial<EnhanceSettings>).forEach(([key, val]) => {
+          if (key in settings) {
+            const k = key as keyof EnhanceSettings
+            (updateSetting as (key: keyof EnhanceSettings, value: EnhanceSettings[keyof EnhanceSettings]) => void)(k, val as EnhanceSettings[keyof EnhanceSettings])
+          }
         })
         if (activeFile) {
           if (hasFile) {

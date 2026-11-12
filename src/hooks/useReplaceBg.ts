@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, type SyntheticEvent } from 'react'
 import axios from 'axios'
 import { useActiveImage } from '../contexts/ActiveImageContext'
 import { useStudioOutput } from './useStudioOutput'
@@ -118,14 +118,14 @@ export function useReplaceBg() {
 
   // ── Step 2: replace background ────────────────────────────────────────
 
-  const replaceBackground = useCallback(async (customSettings?: BgSettings | any) => {
+  const replaceBackground = useCallback(async (customSettings?: Partial<BgSettings> | SyntheticEvent) => {
     if (!removeResult) return
 
     setReplaceStatus('replacing')
     setReplaceResult(null)
     setReplaceError(null)
 
-    const isPreset = customSettings && !customSettings.nativeEvent
+    const isPreset = customSettings && !('nativeEvent' in customSettings)
     if (isPreset) {
       setSettings(prev => ({ ...prev, ...customSettings }))
     }

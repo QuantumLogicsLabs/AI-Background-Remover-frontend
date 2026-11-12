@@ -513,9 +513,9 @@ export default function BackgroundPicker({
   // Attach / detach event listener when the Library tab is active
   // We do it unconditionally but it only fires when the library panel is mounted.
   if (typeof window !== 'undefined') {
-    window.removeEventListener('__library_fit' as any, handleLibraryFitEvent)
+    window.removeEventListener('__library_fit', handleLibraryFitEvent as EventListener)
     if (settings.bgType === 'library') {
-      window.addEventListener('__library_fit' as any, handleLibraryFitEvent, { once: false })
+      window.addEventListener('__library_fit', handleLibraryFitEvent as EventListener, { once: false })
     }
   }
 

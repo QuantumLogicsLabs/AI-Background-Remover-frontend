@@ -1,12 +1,12 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { BrowserRouter, Routes, Route, useLocation } from 'react-router-dom'
-import { AuthProvider } from './contexts/AuthContext'
+import { AuthProvider } from './contexts/AuthProvider'
 import { useAuth } from './hooks/useAuth'
-import { ActiveImageProvider } from './contexts/ActiveImageContext'
-import { ToastProvider } from './contexts/ToastContext'
-import { ThemeSettingsProvider } from './contexts/ThemeSettingsContext'
-import { WorkspaceProvider } from './contexts/WorkspaceContext'
-import { BrandKitProvider } from './contexts/BrandKitContext'
+import { ActiveImageProvider } from './contexts/ActiveImageProvider'
+import { ToastProvider } from './contexts/ToastProvider'
+import { ThemeSettingsProvider } from './contexts/ThemeSettingsProvider'
+import { WorkspaceProvider } from './contexts/WorkspaceProvider'
+import { BrandKitProvider } from './contexts/BrandKitProvider'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts'
 
 // ── Eagerly loaded components ───────────────────────────────────────────────

@@ -1,11 +1,18 @@
 // ── Chat ────────────────────────────────────────────────────────────────────
 
+export interface ChatAction {
+  type?: string
+  payload?: unknown
+  data?: unknown
+  [key: string]: unknown
+}
+
 export interface Message {
   id: string
   role: 'user' | 'assistant'
   content: string
   thinking?: string | null
-  action?: any
+  action?: ChatAction | null
   timestamp: number
   topic?: string
 }
@@ -13,7 +20,7 @@ export interface Message {
 export interface ChatResponse {
   reply: string
   thinking?: string | null
-  action?: any
+  action?: ChatAction | null
   conversation_id: string
 }
 

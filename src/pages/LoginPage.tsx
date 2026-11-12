@@ -1,4 +1,4 @@
-import { useState, type FormEvent, useRef, useEffect } from 'react'
+import { useState, type FormEvent, useRef, useEffect, useCallback } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../hooks/useAuth'
@@ -67,13 +67,13 @@ export default function LoginPage() {
   const [sliderPosition, setSliderPosition] = useState(50)
   const [isDragging, setIsDragging] = useState(false)
 
-  const handleMove = (clientX: number) => {
+  const handleMove = useCallback((clientX: number) => {
     if (!containerRef.current) return
     const rect = containerRef.current.getBoundingClientRect()
     const x = clientX - rect.left
     const position = Math.max(0, Math.min(100, (x / rect.width) * 100))
     setSliderPosition(position)
-  }
+  }, [])
 
   const handleMouseDown = () => setIsDragging(true)
 
@@ -96,16 +96,16 @@ export default function LoginPage() {
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [isDragging])
-
-  const handleTouchMove = (e: TouchEvent) => {
-    if (!isDragging) return
-    if (e.touches.length > 0) {
-      handleMove(e.touches[0].clientX)
-    }
-  }
+  }, [isDragging, handleMove])
 
   useEffect(() => {
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDragging) return
+      if (e.touches.length > 0) {
+        handleMove(e.touches[0].clientX)
+      }
+    }
+
     const handleTouchEnd = () => setIsDragging(false)
     if (isDragging) {
       window.addEventListener('touchend', handleTouchEnd)
@@ -115,7 +115,7 @@ export default function LoginPage() {
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchmove', handleTouchMove, { passive: false } as EventListenerOptions)
     }
-  }, [isDragging])
+  }, [isDragging, handleMove])
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -132,7 +132,13 @@ export default function LoginPage() {
           if (typeof data.detail === 'string') {
             msg = data.detail
           } else if (Array.isArray(data.detail)) {
-            msg = data.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ')
+            msg = data.detail
+              .map((d: { msg?: string } | unknown) =>
+                typeof d === 'object' && d !== null && 'msg' in d && typeof (d as { msg: unknown }).msg === 'string'
+                  ? (d as { msg: string }).msg
+                  : JSON.stringify(d),
+              )
+              .join(', ')
           }
         } else if (typeof data === 'string' && (data.includes('ECONNREFUSED') || data.includes('Internal Server Error'))) {
           msg = 'Cannot reach backend server. Make sure the backend is running on port 8000.'
