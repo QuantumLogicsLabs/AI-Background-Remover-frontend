@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
+import SocialAuthButtons from '../components/SocialAuthButtons'
 
 import handbagOriginal from '../assets/handbag_original.jpg'
 import handbagRemoved from '../assets/handbag_removed.jpg'
@@ -347,6 +348,9 @@ export default function RegisterPage() {
               </Link>
             </p>
           </div>
+
+          {/* Social sign-up (renders only if configured on the backend) */}
+          <SocialAuthButtons />
 
           {/* Form */}
           <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>

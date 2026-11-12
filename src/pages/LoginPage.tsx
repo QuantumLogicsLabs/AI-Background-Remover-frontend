@@ -3,6 +3,7 @@ import { Link, useNavigate, useLocation } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
+import SocialAuthButtons from '../components/SocialAuthButtons'
 
 import handbagOriginal from '../assets/handbag_original.jpg'
 import handbagRemoved from '../assets/handbag_removed.jpg'
@@ -364,6 +365,7 @@ export default function LoginPage() {
           >
             {/* Accent top bar */}
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#7C3AED] via-[#2FBFB0] to-[#7C3AED] dark:from-[#F59E0B] dark:via-[#F97316] dark:to-[#F59E0B] opacity-60 rounded-t-2xl" />
+            <SocialAuthButtons />
             <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
 
               {/* Email */}

@@ -26,6 +26,7 @@ export interface AuthContextValue {
   register:      (name: string, email: string, password: string) => Promise<void>
   logout:        () => Promise<void>
   refreshUser:   () => Promise<void>
+  completeOAuthLogin: () => Promise<void>  // after Google/GitHub redirect
   updateProfile: (data: Partial<Pick<AuthUser, 'name' | 'email'>>) => void
 }
 
@@ -263,6 +264,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [logout])
 
+  // ── Complete a Google/GitHub sign-in ───────────────────────────────────────
+  // The backend already set the httpOnly refresh cookie. Exchange it for an
+  // access token (replacing any stale stored one) and load the user.
+  const completeOAuthLogin = useCallback(async () => {
+    const res = await axios.post<{ access_token: string }>(
+      '/api/auth/refresh',
+      null,
+      { withCredentials: true },
+    )
+    _storeToken(res.data.access_token)
+    const me = await axios.get<AuthUser>('/api/auth/me')
+    setUser(me.data)
+  }, [_storeToken])
+
   // ── Update profile in-memory (after a successful PATCH) ───────────────────
   const updateProfile = useCallback(
     (data: Partial<Pick<AuthUser, 'name' | 'email'>>) => {
@@ -273,7 +288,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, login, register, logout, refreshUser, updateProfile }}
+      value={{ user, token, loading, login, register, logout, refreshUser, completeOAuthLogin, updateProfile }}
     >
       {children}
     </AuthContext.Provider>

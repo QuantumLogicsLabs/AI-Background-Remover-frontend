@@ -20,6 +20,7 @@ import AnimatedBackground from './components/AnimatedBackground'
 // ── Lazy-loaded pages ───────────────────────────────────────────────────────
 const LoginPage = lazy(() => import('./pages/LoginPage'))
 const RegisterPage = lazy(() => import('./pages/RegisterPage'))
+const AuthCallbackPage = lazy(() => import('./pages/AuthCallbackPage'))
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'))
 const ResetPasswordPage = lazy(() => import('./pages/ResetPasswordPage'))
 const HomePage = lazy(() => import('./pages/HomePage'))
@@ -54,7 +55,7 @@ function MainLayout() {
   useKeyboardShortcuts()
 
   // Auth pages that should not show the navbar
-  const authPages = ['/login', '/register', '/forgot-password', '/reset-password']
+  const authPages = ['/login', '/register', '/forgot-password', '/reset-password', '/auth/callback']
   const isAuthPage = authPages.includes(location.pathname)
 
   // Toggle data-auth-page attribute on <html> so the theme engine can exclude accent
@@ -82,6 +83,7 @@ function MainLayout() {
               {/* Public routes */}
               <Route path="/login" element={<LoginPage />} />
               <Route path="/register" element={<RegisterPage />} />
+              <Route path="/auth/callback" element={<AuthCallbackPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
 
