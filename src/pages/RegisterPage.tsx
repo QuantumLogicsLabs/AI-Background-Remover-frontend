@@ -80,7 +80,7 @@ export default function RegisterPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [suggestedPassword, setSuggestedPassword] = useState(generateSuggestedPassword)
+  const [suggestedPassword] = useState(generateSuggestedPassword)
   const [showPasswordSuggestion, setShowPasswordSuggestion] = useState(false)
   const [passwordMode, setPasswordMode] = useState<'suggested-pending' | 'suggested' | 'custom' | null>(null)
   const [confirm, setConfirm] = useState('')
@@ -177,7 +177,20 @@ export default function RegisterPage() {
           if (typeof data.detail === 'string') {
             msg = data.detail
           } else if (Array.isArray(data.detail)) {
-            msg = data.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ')
+          msg = data.detail
+  .map((item: unknown) => {
+    if (
+      typeof item === 'object' &&
+      item !== null &&
+      'msg' in item &&
+      typeof item.msg === 'string'
+    ) {
+      return item.msg
+    }
+
+    return JSON.stringify(item)
+  })
+  .join(', ')
           }
         } else if (typeof data === 'string' && (data.includes('ECONNREFUSED') || data.includes('Internal Server Error'))) {
           msg = 'Cannot reach backend server. Make sure the backend is running on port 8000.'
