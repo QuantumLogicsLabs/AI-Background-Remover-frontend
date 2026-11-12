@@ -67,7 +67,7 @@ function generateSuggestedPassword(): string {
   while (chars.length < 16) chars.push(all[randomIndex(all.length)])
   for (let i = chars.length - 1; i > 0; i -= 1) {
     const j = randomIndex(i + 1)
-    ;[chars[i], chars[j]] = [chars[j], chars[i]]
+      ;[chars[i], chars[j]] = [chars[j], chars[i]]
   }
   return chars.join('')
 }
@@ -176,20 +176,20 @@ export default function RegisterPage() {
           if (typeof data.detail === 'string') {
             msg = data.detail
           } else if (Array.isArray(data.detail)) {
-          msg = data.detail
-  .map((item: unknown) => {
-    if (
-      typeof item === 'object' &&
-      item !== null &&
-      'msg' in item &&
-      typeof item.msg === 'string'
-    ) {
-      return item.msg
-    }
+            msg = data.detail
+              .map((item: unknown) => {
+                if (
+                  typeof item === 'object' &&
+                  item !== null &&
+                  'msg' in item &&
+                  typeof item.msg === 'string'
+                ) {
+                  return item.msg
+                }
 
-    return JSON.stringify(item)
-  })
-  .join(', ')
+                return JSON.stringify(item)
+              })
+              .join(', ')
           }
         } else if (typeof data === 'string' && (data.includes('ECONNREFUSED') || data.includes('Internal Server Error'))) {
           msg = 'Cannot reach backend server. Make sure the backend is running on port 8000.'
@@ -569,9 +569,8 @@ export default function RegisterPage() {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 disabled={busy}
-                className={`w-full px-3.5 py-2.5 rounded-lg border bg-surface text-sm text-primary placeholder:text-muted focus:outline-none disabled:opacity-50 ${
-                  passwordMismatch ? 'border-danger focus:border-danger' : 'border-border focus:border-magenta'
-                }`}
+                className={`w-full px-3.5 py-2.5 rounded-lg border bg-surface text-sm text-primary placeholder:text-muted focus:outline-none disabled:opacity-50 ${passwordMismatch ? 'border-danger focus:border-danger' : 'border-border focus:border-magenta'
+                  }`}
               />
               {passwordMismatch && <p className="text-xs text-danger">Passwords do not match.</p>}
             </div>
