@@ -139,7 +139,7 @@ export function useRecolor() {
         setStatus('error')
       }
     },
-    [brush.color, settings],
+    [brush.color, settings, registerOutput],
   )
 
   // ── Reset everything ───────────────────────────────────────────────────

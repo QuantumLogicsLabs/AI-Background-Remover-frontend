@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useCallback, useRef, type SyntheticEvent } from 'react'
 import axios from 'axios'
 import { useStudioOutput } from './useStudioOutput'
 import { useActiveImage } from '../contexts/ActiveImageContext'
@@ -104,7 +104,7 @@ export function useSmartCrop() {
       setError(msg)
       setStatus('error')
     }
-  }, [])
+  }, [registerOutput])
 
   // ── Load file without processing (staging) ──────────────────────────
   const loadFile = useCallback((file: File) => {
@@ -129,10 +129,10 @@ export function useSmartCrop() {
   }, [settings, _post, setActiveImage])
 
   // ── Re-crop with updated settings (no re-upload needed) ───────────────
-  const reCrop = useCallback(async (customSettings?: CropSettings | any) => {
+  const reCrop = useCallback(async (customSettings?: Partial<CropSettings> | SyntheticEvent) => {
     const file = fileRef.current
     if (!file) return
-    const isPreset = customSettings && !customSettings.nativeEvent
+    const isPreset = customSettings && !('nativeEvent' in customSettings)
     if (isPreset) {
       setSettings(prev => ({ ...prev, ...customSettings }))
     }

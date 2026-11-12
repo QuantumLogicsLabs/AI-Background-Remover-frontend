@@ -1,50 +1,13 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-
-export interface WorkspaceItem {
-  id: string;
-  name: string;
-  originalUrl?: string;
-  outputUrl?: string;
-  outputFilename?: string;
-  timestamp: number;
-  operationType: string;
-  size?: number;
-}
-
-export interface WorkspaceProject {
-  id: string;
-  name: string;
-  createdAt: number;
-  updatedAt: number;
-  items: WorkspaceItem[];
-}
-
-export interface WorkspaceContextType {
-  projects: WorkspaceProject[];
-  activeProjectId: string;
-  activeProject: WorkspaceProject;
-  createProject: (name: string) => WorkspaceProject;
-  renameProject: (id: string, newName: string) => void;
-  deleteProject: (id: string) => void;
-  setActiveProjectId: (id: string) => void;
-  addItemToProject: (item: Omit<WorkspaceItem, 'id' | 'timestamp'>) => void;
-  removeItemFromProject: (itemId: string) => void;
-  clearActiveProject: () => void;
-  recentItems: WorkspaceItem[];
-}
+import { useState, useEffect, ReactNode } from 'react';
+import {
+  WorkspaceContext,
+  DEFAULT_PROJECT,
+  type WorkspaceItem,
+  type WorkspaceProject,
+} from './WorkspaceContext';
 
 const STORAGE_KEY = 'ai_bg_workspace_projects';
 const ACTIVE_PROJECT_KEY = 'ai_bg_active_project_id';
-
-const DEFAULT_PROJECT: WorkspaceProject = {
-  id: 'default',
-  name: 'Main Workspace',
-  createdAt: Date.now(),
-  updatedAt: Date.now(),
-  items: [],
-};
-
-const WorkspaceContext = createContext<WorkspaceContextType | undefined>(undefined);
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<WorkspaceProject[]>(() => {
@@ -54,9 +17,9 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-      } catch (_err) {
-        // localStorage value is corrupt — fall back to default project
-      }
+    } catch (_err) {
+      // localStorage value is corrupt — fall back to default project
+    }
     return [DEFAULT_PROJECT];
   });
 
@@ -177,10 +140,3 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useWorkspace(): WorkspaceContextType {
-  const context = useContext(WorkspaceContext);
-  if (!context) {
-    throw new Error('useWorkspace must be used within a WorkspaceProvider');
-  }
-  return context;
-}

@@ -15,7 +15,7 @@ import { useUpload } from '../hooks/useUpload'
 import { useActiveImage } from '../contexts/ActiveImageContext'
 import { useWorkspace } from '../contexts/WorkspaceContext'
 import { extractImagePalette, ExtractedPalette } from '../services/colorExtractor'
-import type { BgSettings } from '../hooks/useReplaceBg'
+import type { BgSettings, ReplaceResult } from '../hooks/useReplaceBg'
 
 const FEATURE_CHIPS = [
   { label: 'JPEG, PNG, WebP', icon: '🖼️' },
@@ -62,7 +62,7 @@ export default function HomePage() {
   // Background replacement state
   const [showReplaceBg, setShowReplaceBg] = useState(false)
   const [replaceStatus, setReplaceStatus] = useState<'idle' | 'replacing' | 'done' | 'error'>('idle')
-  const [replaceResult, setReplaceResult] = useState<any>(null)
+  const [replaceResult, setReplaceResult] = useState<ReplaceResult | null>(null)
   const [replaceError, setReplaceError] = useState<string | null>(null)
 
   // Manual canvas touch-up editor modal state
@@ -137,7 +137,7 @@ export default function HomePage() {
     }
 
     try {
-      const res = await axios.post('/api/replace-background', formData, {
+      const res = await axios.post<ReplaceResult>('/api/replace-background', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       })
       setReplaceResult(res.data)
@@ -151,8 +151,10 @@ export default function HomePage() {
         outputFilename: res.data.output_filename,
         operationType: 'replace_bg',
       })
-    } catch (err: any) {
-      const msg = err?.response?.data?.detail || 'Background replacement failed. Please try again.'
+    } catch (err: unknown) {
+      const msg = axios.isAxiosError(err) && err.response?.data?.detail
+        ? String(err.response.data.detail)
+        : 'Background replacement failed. Please try again.'
       setReplaceError(msg)
       setReplaceStatus('error')
     }

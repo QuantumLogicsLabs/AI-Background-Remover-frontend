@@ -1,42 +1,19 @@
 import {
-  createContext,
   useState,
   useEffect,
   useCallback,
-  useContext,
   useRef,
   type ReactNode,
 } from 'react'
 import axios, { type AxiosRequestConfig } from 'axios'
-
-// ── Types ──────────────────────────────────────────────────────────────────
-
-export interface AuthUser {
-  user_id:    string
-  name:       string
-  email:      string
-  created_at: string
-}
-
-export interface AuthContextValue {
-  user:          AuthUser | null
-  token:         string | null
-  loading:       boolean       // true while validating stored token on mount
-  login:         (email: string, password: string) => Promise<void>
-  register:      (name: string, email: string, password: string) => Promise<void>
-  logout:        () => Promise<void>
-  refreshUser:   () => Promise<void>
-  completeOAuthLogin: () => Promise<void>  // after Google/GitHub redirect
-  updateProfile: (data: Partial<Pick<AuthUser, 'name' | 'email'>>) => void
-}
+import {
+  AuthContext,
+  type AuthUser,
+} from './AuthContext'
 
 // ── Storage key ────────────────────────────────────────────────────────────
 
 const TOKEN_KEY = 'bgr_token'
-
-// ── Context ────────────────────────────────────────────────────────────────
-
-export const AuthContext = createContext<AuthContextValue | null>(null)
 
 // ── Axios token helpers ────────────────────────────────────────────────────
 
@@ -295,10 +272,3 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   )
 }
 
-// ── useAuthContext (raw, internal use) ─────────────────────────────────────
-
-export function useAuthContext(): AuthContextValue {
-  const ctx = useContext(AuthContext)
-  if (!ctx) throw new Error('useAuthContext must be used inside <AuthProvider>')
-  return ctx
-}

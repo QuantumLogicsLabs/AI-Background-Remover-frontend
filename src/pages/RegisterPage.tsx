@@ -1,4 +1,4 @@
-import { useState, type FormEvent, useRef, useEffect } from 'react'
+import { useState, type FormEvent, useRef, useEffect, useCallback } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../hooks/useAuth'
@@ -67,7 +67,7 @@ function generateSuggestedPassword(): string {
   while (chars.length < 16) chars.push(all[randomIndex(all.length)])
   for (let i = chars.length - 1; i > 0; i -= 1) {
     const j = randomIndex(i + 1)
-    ;[chars[i], chars[j]] = [chars[j], chars[i]]
+      ;[chars[i], chars[j]] = [chars[j], chars[i]]
   }
   return chars.join('')
 }
@@ -80,7 +80,7 @@ export default function RegisterPage() {
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
-  const [suggestedPassword, _setSuggestedPassword] = useState(generateSuggestedPassword)
+  const [suggestedPassword] = useState(generateSuggestedPassword)
   const [showPasswordSuggestion, setShowPasswordSuggestion] = useState(false)
   const [passwordMode, setPasswordMode] = useState<'suggested-pending' | 'suggested' | 'custom' | null>(null)
   const [confirm, setConfirm] = useState('')
@@ -94,13 +94,13 @@ export default function RegisterPage() {
   const [sliderPosition, setSliderPosition] = useState(50)
   const [isDragging, setIsDragging] = useState(false)
 
-  const handleMove = (clientX: number) => {
+  const handleMove = useCallback((clientX: number) => {
     if (!containerRef.current) return
     const rect = containerRef.current.getBoundingClientRect()
     const x = clientX - rect.left
     const position = Math.max(0, Math.min(100, (x / rect.width) * 100))
     setSliderPosition(position)
-  }
+  }, [])
 
   const handleMouseDown = () => setIsDragging(true)
   const handleTouchStart = () => setIsDragging(true)
@@ -120,16 +120,15 @@ export default function RegisterPage() {
       window.removeEventListener('mousemove', handleMouseMove)
       window.removeEventListener('mouseup', handleMouseUp)
     }
-  }, [isDragging])
-
-  const handleTouchMove = (e: TouchEvent) => {
-    if (!isDragging) return
-    if (e.touches.length > 0) {
-      handleMove(e.touches[0].clientX)
-    }
-  }
+  }, [isDragging, handleMove])
 
   useEffect(() => {
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!isDragging) return
+      if (e.touches.length > 0) {
+        handleMove(e.touches[0].clientX)
+      }
+    }
     const handleTouchEnd = () => setIsDragging(false)
     if (isDragging) {
       window.addEventListener('touchend', handleTouchEnd)
@@ -139,7 +138,7 @@ export default function RegisterPage() {
       window.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('touchmove', handleTouchMove, { passive: false } as EventListenerOptions)
     }
-  }, [isDragging])
+  }, [isDragging, handleMove])
 
   const passwordMismatch = confirm.length > 0 && password !== confirm
   const passwordChecks = {
@@ -177,7 +176,20 @@ export default function RegisterPage() {
           if (typeof data.detail === 'string') {
             msg = data.detail
           } else if (Array.isArray(data.detail)) {
-            msg = data.detail.map((d: any) => d.msg || JSON.stringify(d)).join(', ')
+            msg = data.detail
+              .map((item: unknown) => {
+                if (
+                  typeof item === 'object' &&
+                  item !== null &&
+                  'msg' in item &&
+                  typeof item.msg === 'string'
+                ) {
+                  return item.msg
+                }
+
+                return JSON.stringify(item)
+              })
+              .join(', ')
           }
         } else if (typeof data === 'string' && (data.includes('ECONNREFUSED') || data.includes('Internal Server Error'))) {
           msg = 'Cannot reach backend server. Make sure the backend is running on port 8000.'
@@ -557,9 +569,8 @@ export default function RegisterPage() {
                 value={confirm}
                 onChange={(e) => setConfirm(e.target.value)}
                 disabled={busy}
-                className={`w-full px-3.5 py-2.5 rounded-lg border bg-surface text-sm text-primary placeholder:text-muted focus:outline-none disabled:opacity-50 ${
-                  passwordMismatch ? 'border-danger focus:border-danger' : 'border-border focus:border-magenta'
-                }`}
+                className={`w-full px-3.5 py-2.5 rounded-lg border bg-surface text-sm text-primary placeholder:text-muted focus:outline-none disabled:opacity-50 ${passwordMismatch ? 'border-danger focus:border-danger' : 'border-border focus:border-magenta'
+                  }`}
               />
               {passwordMismatch && <p className="text-xs text-danger">Passwords do not match.</p>}
             </div>

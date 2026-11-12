@@ -108,8 +108,17 @@ export default function CategorizationPage() {
     try {
       const data = await mlService.categorize(f)
       setResult(data)
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Categorization failed.')
+    } catch (err: unknown) {
+      let msg = 'Categorization failed.'
+      if (typeof err === 'object' && err !== null) {
+        const errorObj = err as { response?: { data?: { detail?: unknown } }; message?: unknown }
+        if (typeof errorObj.response?.data?.detail === 'string') {
+          msg = errorObj.response.data.detail
+        } else if (typeof errorObj.message === 'string') {
+          msg = errorObj.message
+        }
+      }
+      setError(msg)
     } finally {
       setLoading(false)
     }

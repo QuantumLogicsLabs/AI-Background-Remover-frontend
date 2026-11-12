@@ -161,8 +161,17 @@ export default function DuplicateDetectionPage() {
     try {
       const data = await mlService.checkDuplicates(file)
       setResult(data)
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Duplicate check failed.')
+    } catch (err: unknown) {
+      let msg = 'Duplicate check failed.'
+      if (typeof err === 'object' && err !== null) {
+        const errorObj = err as { response?: { data?: { detail?: unknown } }; message?: unknown }
+        if (typeof errorObj.response?.data?.detail === 'string') {
+          msg = errorObj.response.data.detail
+        } else if (typeof errorObj.message === 'string') {
+          msg = errorObj.message
+        }
+      }
+      setError(msg)
     } finally {
       setLoading(false)
     }
@@ -176,8 +185,17 @@ export default function DuplicateDetectionPage() {
     try {
       const data = await mlService.indexForDuplicates(file)
       setIndexMsg(data.message)
-    } catch (err: any) {
-      setError(err?.response?.data?.detail || err?.message || 'Indexing failed.')
+    } catch (err: unknown) {
+      let msg = 'Indexing failed.'
+      if (typeof err === 'object' && err !== null) {
+        const errorObj = err as { response?: { data?: { detail?: unknown } }; message?: unknown }
+        if (typeof errorObj.response?.data?.detail === 'string') {
+          msg = errorObj.response.data.detail
+        } else if (typeof errorObj.message === 'string') {
+          msg = errorObj.message
+        }
+      }
+      setError(msg)
     } finally {
       setIndexing(false)
     }

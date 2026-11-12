@@ -1,7 +1,7 @@
-import "@testing-library/jest-dom/vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
-import QualityToggle from "../QualityToggle";
+import { render, screen, fireEvent } from '@testing-library/react'
+import { describe, it, expect, vi } from 'vitest'
+import QualityToggle from '../QualityToggle'
+import '@testing-library/jest-dom/vitest'
 
 describe("QualityToggle", () => {
   it("renders all three quality options", () => {
@@ -61,12 +61,17 @@ describe("QualityToggle", () => {
     expect(group.className).toContain("pointer-events-none");
   });
 
-  it("shows correct description text for each option", () => {
-    const onChange = vi.fn();
-    render(<QualityToggle value="fast" onChange={onChange} />);
+  it('shows correct description text for each option', () => {
+    const onChange = vi.fn()
+    render(<QualityToggle value="fast" onChange={onChange} />)
 
-    expect(screen.getByTitle(/ISNet/i)).toBeInTheDocument();
-    expect(screen.getByTitle(/U²-Net/i)).toBeInTheDocument();
-    expect(screen.getByTitle(/BiRefNet/i)).toBeInTheDocument();
-  });
-});
+    expect(screen.getByRole('radio', { name: /fast/i }))
+      .toHaveAttribute('title', 'ISNet · quick results')
+
+    expect(screen.getByRole('radio', { name: /standard/i }))
+      .toHaveAttribute('title', 'U²-Net · best for people')
+
+    expect(screen.getByRole('radio', { name: /quality/i }))
+      .toHaveAttribute('title', 'BiRefNet · best edges')
+  })
+})

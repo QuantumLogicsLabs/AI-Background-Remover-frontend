@@ -91,12 +91,13 @@ function AnalysisSkeleton() {
 
 // ── Analysing overlay shown on the preview panel ──────────────────────────────
 
+const ANALYSIS_STEPS = ['Reading pixels…', 'Scoring quality…', 'Extracting palette…', 'Identifying subject…', 'Building insights…']
+
 function AnalysingOverlay() {
-  const steps = ['Reading pixels…', 'Scoring quality…', 'Extracting palette…', 'Identifying subject…', 'Building insights…']
   const [step, setStep] = useState(0)
 
   useEffect(() => {
-    const id = setInterval(() => setStep(s => (s + 1) % steps.length), 1400)
+    const id = setInterval(() => setStep(s => (s + 1) % ANALYSIS_STEPS.length), 1400)
     return () => clearInterval(id)
   }, [])
 
@@ -119,12 +120,12 @@ function AnalysingOverlay() {
       {/* Status text */}
       <div className="flex flex-col items-center gap-1">
         <p className="text-sm font-semibold text-primary">Analysing image…</p>
-        <p className="text-xs text-muted animate-pulse transition-all duration-500">{steps[step]}</p>
+        <p className="text-xs text-muted animate-pulse transition-all duration-500">{ANALYSIS_STEPS[step]}</p>
       </div>
 
       {/* Progress dots */}
       <div className="flex gap-1.5">
-        {steps.map((_, i) => (
+        {ANALYSIS_STEPS.map((_, i) => (
           <span
             key={i}
             className="w-1.5 h-1.5 rounded-full transition-all duration-300"
@@ -168,11 +169,16 @@ export default function AIAnalysisPage() {
     try {
       const data = await imageService.analyze(f)
       setResult(data)
-    } catch (err: any) {
-      const msg =
-        err?.response?.data?.detail ||
-        err?.message ||
-        'Analysis failed. Please try again.'
+    } catch (err: unknown) {
+      let msg = 'Analysis failed. Please try again.'
+      if (typeof err === 'object' && err !== null) {
+        const errorObj = err as { response?: { data?: { detail?: unknown } }; message?: unknown }
+        if (typeof errorObj.response?.data?.detail === 'string') {
+          msg = errorObj.response.data.detail
+        } else if (typeof errorObj.message === 'string') {
+          msg = errorObj.message
+        }
+      }
       setError(msg)
     } finally {
       setLoading(false)

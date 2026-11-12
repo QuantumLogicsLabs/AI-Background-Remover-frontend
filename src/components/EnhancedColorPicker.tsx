@@ -15,6 +15,14 @@ const PALETTES = {
   Vibrant: ['#EF4444', '#F97316', '#EAB308', '#22C55E', '#06B6D4', '#3B82F6', '#8B5CF6'],
 };
 
+interface EyeDropperInstance {
+  open: () => Promise<{ sRGBHex?: string }>
+}
+
+interface WindowWithEyeDropper extends Window {
+  EyeDropper?: new () => EyeDropperInstance
+}
+
 export default function EnhancedColorPicker({
   color,
   onChange,
@@ -26,12 +34,14 @@ export default function EnhancedColorPicker({
   const handleEyedropper = async () => {
     if ('EyeDropper' in window) {
       try {
-        const eyeDropper = new (window as any).EyeDropper();
+        const EyeDropperClass = (window as unknown as WindowWithEyeDropper).EyeDropper;
+        if (!EyeDropperClass) return;
+        const eyeDropper = new EyeDropperClass();
         const result = await eyeDropper.open();
         if (result?.sRGBHex) {
           onChange(result.sRGBHex);
         }
-      } catch (e) {
+      } catch (_e) {
         // User cancelled or eyedropper failed
       }
     }

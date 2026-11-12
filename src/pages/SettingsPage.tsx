@@ -71,16 +71,29 @@ function Spinner() {
 }
 
 // ---------------- Dashboard Tab ----------------
+interface UserStats {
+  total_images?: number
+  storage_bytes?: number
+  operations?: {
+    remove_bg?: number
+    enhance?: number
+    replace_bg?: number
+    smart_crop?: number
+    recolor?: number
+    [key: string]: number | undefined
+  }
+}
+
 function DashboardTab() {
   const { user } = useAuth()
-  const [stats, setStats] = useState<any>(null)
+  const [stats, setStats] = useState<UserStats | null>(null)
   const [loading, setLoading] = useState(true)
   const [statsError, setStatsError] = useState<string | null>(null)
 
   useEffect(() => {
     async function fetchStats() {
       try {
-        const res = await axios.get('/api/auth/stats')
+        const res = await axios.get<UserStats>('/api/auth/stats')
         setStats(res.data)
       } catch (_err) {
         setStatsError('Failed to load usage stats. Please refresh to try again.')

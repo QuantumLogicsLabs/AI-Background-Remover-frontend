@@ -1,26 +1,9 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { useState, useEffect, ReactNode } from 'react';
 import { subscribeToOnlineStatus } from '../services/pwaService';
-
-export type AccentTheme = 'gold' | 'cyber' | 'emerald' | 'sapphire' | 'sunset' | 'rose' | 'arctic' | 'crimson' | 'violet';
-
-export interface ThemeSettingsState {
-  accent: AccentTheme;
-  setAccent: (theme: AccentTheme) => void;
-  clientCompression: boolean;
-  setClientCompression: (enabled: boolean) => void;
-  compressionQuality: number;
-  setCompressionQuality: (q: number) => void;
-  maxDimension: number;
-  setMaxDimension: (dim: number) => void;
-  isShortcutsOpen: boolean;
-  setIsShortcutsOpen: (open: boolean) => void;
-  isOnline: boolean;
-  hapticFeedback: boolean;
-  setHapticFeedback: (enabled: boolean) => void;
-  sidebarOpen: boolean;
-  setSidebarOpen: (open: boolean) => void;
-  toggleSidebar: () => void;
-}
+import {
+  ThemeSettingsContext,
+  type AccentTheme,
+} from './ThemeSettingsContext';
 
 const ACCENT_KEY = 'ai_bg_accent_theme';
 const COMPRESSION_KEY = 'ai_bg_compression_enabled';
@@ -28,8 +11,6 @@ const QUALITY_KEY = 'ai_bg_compression_quality';
 const MAX_DIM_KEY = 'ai_bg_max_dimension';
 const HAPTIC_KEY = 'ai_bg_haptic';
 const SIDEBAR_KEY = 'ai_bg_sidebar_open';
-
-const ThemeSettingsContext = createContext<ThemeSettingsState | undefined>(undefined);
 
 export function ThemeSettingsProvider({ children }: { children: ReactNode }) {
   const [accent, setAccentState] = useState<AccentTheme>(() => {
@@ -147,10 +128,3 @@ export function ThemeSettingsProvider({ children }: { children: ReactNode }) {
   );
 }
 
-export function useThemeSettings(): ThemeSettingsState {
-  const context = useContext(ThemeSettingsContext);
-  if (!context) {
-    throw new Error('useThemeSettings must be used within a ThemeSettingsProvider');
-  }
-  return context;
-}
