@@ -2,8 +2,10 @@ import { useState, useRef, useEffect } from 'react'
 import { Link, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import ThemeToggle from './ThemeToggle'
 import { useAuth } from '../hooks/useAuth'
-import { useThemeSettings, AccentTheme } from '../contexts/ThemeSettingsContext'
+import { useThemeSettings } from '../contexts/ThemeSettingsContext'
 import Tooltip from './Tooltip'
+import AccentPicker from './AccentPicker'
+import ProfileModal from './ProfileModal'
 
 // ── Primary nav items (always visible) ────────────────────────────────────
 const NAV_ITEMS = [
@@ -53,9 +55,9 @@ function AppNavLink({ to, label, end, icon }: { to: string; label: string; end?:
 
 function UserMenu() {
   const { user, logout } = useAuth()
-  const { accent, setAccent } = useThemeSettings()
   const navigate = useNavigate()
   const [open, setOpen] = useState(false)
+  const [editingProfile, setEditingProfile] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
@@ -72,26 +74,10 @@ function UserMenu() {
 
   const initial = user.name ? user.name.charAt(0).toUpperCase() : 'U'
 
-  function toggleOpen() {
-    setOpen(v => !v)
-  }
-
-  const ACCENTS: { id: AccentTheme; label: string; color: string }[] = [
-    { id: 'gold',    label: 'Gold',         color: '#F59E0B' },
-    { id: 'cyber',   label: 'Cyber',        color: '#EC4899' },
-    { id: 'sapphire',label: 'Sapphire',     color: '#3B82F6' },
-    { id: 'sunset',  label: 'Sunset',       color: '#F97316' },
-    { id: 'rose',    label: 'Rose Quartz',  color: '#FB7185' },
-    { id: 'arctic',  label: 'Arctic Ice',   color: '#22D3EE' },
-    { id: 'emerald', label: 'Emerald',      color: '#10B981' },
-    { id: 'crimson', label: 'Crimson',      color: '#EF4444' },
-    { id: 'violet',  label: 'Violet Dream', color: '#A855F7' },
-  ]
-
   return (
     <div className="relative" ref={menuRef}>
       <button
-        onClick={toggleOpen}
+        onClick={() => setOpen(v => !v)}
         className="flex items-center gap-1.5 p-0.5 rounded-xl border border-transparent hover:border-border hover:bg-surface-raised transition-all duration-200 focus:outline-none active:scale-95"
         aria-haspopup="true"
         aria-expanded={open}
@@ -112,8 +98,14 @@ function UserMenu() {
           className="absolute right-0 top-full mt-2 w-64 rounded-2xl border border-border bg-surface shadow-2xl z-50 overflow-hidden glass-modal animate-scale-in"
           role="menu"
         >
-          {/* User info */}
-          <div className="px-4 py-3.5 border-b border-border flex items-center gap-3">
+          {/* User info: click to edit profile */}
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => { setOpen(false); setEditingProfile(true) }}
+            className="group w-full px-4 py-3.5 border-b border-border flex items-center gap-3 text-left hover:bg-surface-raised transition-colors"
+            aria-label="Edit profile"
+          >
             <span className="w-9 h-9 rounded-full bg-magenta text-white text-sm font-bold flex items-center justify-center shrink-0 shadow-sm">
               {initial}
             </span>
@@ -121,32 +113,26 @@ function UserMenu() {
               <p className="text-sm font-bold text-primary truncate">{user.name}</p>
               <p className="text-xs text-muted truncate">{user.email}</p>
             </div>
-          </div>
+          </button>
 
-          {/* Quick Accent Switcher */}
+          {/* Accent theme */}
           <div className="p-3 border-b border-border">
-            <div className="flex items-center justify-between mb-2">
-              <span className="text-[11px] font-semibold text-secondary uppercase tracking-wider">Accent Theme</span>
-              <span className="text-[11px] font-mono text-muted capitalize">{accent}</span>
-            </div>
-            <div className="flex items-center flex-wrap gap-1.5">
-              {ACCENTS.map((item) => (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => setAccent(item.id)}
-                  className={`w-5 h-5 rounded-full border transition-all ${
-                    accent === item.id ? 'scale-125 ring-2 ring-magenta/50 border-white' : 'border-border hover:scale-110'
-                  }`}
-                  style={{ backgroundColor: item.color }}
-                  title={item.label}
-                />
-              ))}
-            </div>
+            <span className="block mb-2 text-[11px] font-semibold text-secondary uppercase tracking-wider">Accent Theme</span>
+            <AccentPicker variant="grid" />
           </div>
 
           {/* Actions */}
           <div className="p-1.5 space-y-0.5" role="none">
+            <button
+              onClick={() => { setOpen(false); setEditingProfile(true) }}
+              role="menuitem"
+              className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium text-secondary hover:text-primary hover:bg-surface-raised transition-colors text-left"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" fill="currentColor" className="w-4 h-4" aria-hidden="true">
+                <path d="M8 8a3 3 0 100-6 3 3 0 000 6zm-5 6a5 5 0 0110 0H3z" />
+              </svg>
+              Edit profile
+            </button>
             <button
               onClick={() => { setOpen(false); logout().then(() => navigate('/login')) }}
               role="menuitem"
@@ -160,6 +146,8 @@ function UserMenu() {
           </div>
         </div>
       )}
+
+      <ProfileModal open={editingProfile} onClose={() => setEditingProfile(false)} />
     </div>
   )
 }
@@ -253,11 +241,11 @@ export default function Navbar() {
                 }`}
                 aria-label="Settings"
               >
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
-                <circle cx="12" cy="12" r="3" />
-                <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
-              </svg>
-            </button>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="w-4 h-4">
+                  <circle cx="12" cy="12" r="3" />
+                  <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z" />
+                </svg>
+              </button>
             </Tooltip>
           )}
 
@@ -288,4 +276,3 @@ export default function Navbar() {
     </header>
   )
 }
-

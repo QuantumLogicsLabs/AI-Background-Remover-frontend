@@ -1,7 +1,9 @@
 import { useState, FormEvent, useEffect } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
-import { useThemeSettings, AccentTheme } from '../contexts/ThemeSettingsContext'
+import { useThemeSettings } from '../contexts/ThemeSettingsContext'
+import AccentPicker from '../components/AccentPicker'
+import ProfileForm from '../components/ProfileForm'
 import { useBrandKit, ExportFormat, WatermarkSettings } from '../contexts/BrandKitContext'
 import { SHORTCUT_LIST } from '../hooks/useKeyboardShortcuts'
 import CustomSlider from '../components/CustomSlider'
@@ -184,58 +186,20 @@ function DashboardTab() {
 
 // ---------------- Appearance Tab ----------------
 function AppearanceTab() {
-  const { accent, setAccent } = useThemeSettings()
-  const { showToast } = useToast()
-
-  const THEMES: { id: AccentTheme; name: string; desc: string; color: string }[] = [
-    { id: 'gold',    name: 'Amber Gold (Darkroom Luxury)',      desc: 'Warm amber tones on ultra-deep black surfaces',       color: '#F59E0B' },
-    { id: 'cyber',   name: 'Cyber Neon (Magenta / Violet)',     desc: 'Electric magenta & violet glow aesthetic',            color: '#EC4899' },
-    { id: 'sapphire',name: 'Sapphire Electric (Blue / Indigo)', desc: 'Modern technical electric blue interface',            color: '#3B82F6' },
-    { id: 'sunset',  name: 'Sunset Coral (Orange / Rose)',      desc: 'Warm coral gradient with high punch vibrancy',        color: '#F97316' },
-    { id: 'rose',    name: 'Rose Quartz (Pink / Blush)',        desc: 'Soft romantic pink tones, elegant and warm',          color: '#FB7185' },
-    { id: 'arctic',  name: 'Arctic Ice (Cyan / Sky)',           desc: 'Crystal clear icy cyan — clean and futuristic',       color: '#22D3EE' },
-    { id: 'emerald', name: 'Emerald Mint (Cyan / Green)',       desc: 'Crisp green & teal high-contrast matrix',             color: '#10B981' },
-    { id: 'crimson', name: 'Crimson (Deep Red / Ruby)',         desc: 'Bold deep red — powerful and high-contrast',          color: '#EF4444' },
-    { id: 'violet',  name: 'Violet Dream (Purple / Lilac)',     desc: 'Rich purple hues — creative and luxurious',           color: '#A855F7' },
-  ]
-
   return (
     <div className="flex flex-col gap-6 animate-fade-up">
       <div>
-        <h3 className="text-base font-bold text-primary">Accent Theme Selection</h3>
-        <p className="text-xs text-secondary mt-0.5">Customize the primary interface accent color across buttons, indicators, and glow accents.</p>
+        <h3 className="text-base font-bold text-primary">Accent Theme</h3>
+        <p className="text-xs text-secondary mt-0.5">
+          Pick a two-colour palette. The first colour drives buttons and highlights; the second drives gradients and secondary accents.
+        </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3">
-        {THEMES.map((th) => {
-          const isSelected = accent === th.id
-          return (
-            <div
-              key={th.id}
-              onClick={() => {
-                setAccent(th.id)
-                showToast(`Theme changed to ${th.name}`, 'info')
-              }}
-              className={`p-4 rounded-xl border cursor-pointer transition-all duration-150 flex items-center justify-between ${
-                isSelected
-                  ? 'border-magenta bg-magenta/10 shadow-sm ring-1 ring-magenta/40'
-                  : 'border-border bg-surface-raised hover:border-border-strong hover:bg-surface'
-              }`}
-            >
-              <div className="flex items-center gap-3">
-                <span className="w-6 h-6 rounded-full shadow-sm border border-white/20" style={{ backgroundColor: th.color }} />
-                <div>
-                  <h4 className="text-sm font-semibold text-primary">{th.name}</h4>
-                  <p className="text-xs text-muted">{th.desc}</p>
-                </div>
-              </div>
-              {isSelected && (
-                <span className="text-xs font-bold text-magenta uppercase tracking-wider">Active</span>
-              )}
-            </div>
-          )
-        })}
-      </div>
+      <AccentPicker variant="cards" />
+
+      <p className="text-xs text-muted">
+        Light and dark mode are switched separately with the sun/moon button in the top bar.
+      </p>
     </div>
   )
 }
@@ -340,66 +304,10 @@ function ShortcutsTab() {
 
 // ---------------- Profile Tab ----------------
 function ProfileTab() {
-  const { user, refreshUser } = useAuth()
-  const { showToast } = useToast()
-  const [name, setName] = useState(user?.name || '')
-  const [busy, setBusy] = useState(false)
-
-  async function handleUpdate(e: FormEvent) {
-    e.preventDefault()
-    if (!name.trim() || name === user?.name) return
-
-    setBusy(true)
-    try {
-      await axios.patch('/api/auth/profile', { name: name.trim() })
-      await refreshUser()
-      showToast('Profile updated successfully!', 'success')
-    } catch (err) {
-      const msg = axios.isAxiosError(err) && err.response?.data?.detail ? String(err.response.data.detail) : 'Failed to update profile.'
-      showToast(msg, 'error')
-    } finally {
-      setBusy(false)
-    }
-  }
-
   return (
-    <form onSubmit={handleUpdate} className="flex flex-col gap-6 animate-fade-up">
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="settings-name" className="text-sm font-medium text-secondary">Display Name</label>
-        <input
-          id="settings-name"
-          type="text"
-          value={name}
-          onChange={e => setName(e.target.value)}
-          disabled={busy}
-          className="w-full px-3.5 py-2.5 rounded-lg border border-border bg-surface-raised text-sm text-primary placeholder:text-muted focus:outline-none focus:border-magenta disabled:opacity-50"
-          placeholder="Enter your name"
-          maxLength={80}
-        />
-      </div>
-
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor="settings-email" className="text-sm font-medium text-secondary">Email Address</label>
-        <input
-          id="settings-email"
-          type="email"
-          value={user?.email || ''}
-          disabled
-          className="w-full px-3.5 py-2.5 rounded-lg border border-border bg-surface-raised opacity-60 cursor-not-allowed text-sm text-primary"
-        />
-      </div>
-
-      <div className="flex justify-end pt-2">
-        <button
-          type="submit"
-          disabled={busy || !name.trim() || name === user?.name}
-          className="btn-primary text-xs py-2.5 px-5"
-        >
-          {busy && <Spinner />}
-          {busy ? 'Saving...' : 'Save changes'}
-        </button>
-      </div>
-    </form>
+    <div className="animate-fade-up">
+      <ProfileForm idPrefix="settings" />
+    </div>
   )
 }
 
@@ -544,7 +452,6 @@ function DangerTab() {
     </form>
   )
 }
-
 
 // ---------------- Brand Kit Tab ----------------
 function BrandKitTab() {

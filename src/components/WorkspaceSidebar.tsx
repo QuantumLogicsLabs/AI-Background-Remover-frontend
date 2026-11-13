@@ -1,6 +1,7 @@
 import { useState, FormEvent } from 'react';
 import { useWorkspace, WorkspaceProject } from '../contexts/WorkspaceContext';
 import { useThemeSettings } from '../contexts/ThemeSettingsContext';
+import AccentPicker from './AccentPicker';
 
 export default function WorkspaceSidebar() {
   const {
@@ -15,7 +16,7 @@ export default function WorkspaceSidebar() {
     clearActiveProject,
   } = useWorkspace();
 
-  const { sidebarOpen, setSidebarOpen, accent, setAccent } = useThemeSettings();
+  const { sidebarOpen, setSidebarOpen } = useThemeSettings();
   const [newProjectName, setNewProjectName] = useState('');
   const [isCreating, setIsCreating] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -210,37 +211,10 @@ export default function WorkspaceSidebar() {
         )}
       </div>
 
-      {/* Footer Accent Selector */}
+          {/* Footer Accent Selector */}
       <div className="p-3 border-t border-border bg-surface">
-        <div className="flex items-center justify-between mb-2">
-          <span className="text-[10px] font-semibold text-muted uppercase">Accent Theme</span>
-          <span className="text-[10px] font-mono text-primary capitalize">{accent}</span>
-        </div>
-        <div className="flex items-center justify-between gap-1">
-          {(['gold', 'cyber', 'emerald', 'sapphire', 'sunset', 'rose', 'arctic', 'crimson', 'violet'] as const).map((th) => (
-            <button
-              key={th}
-              type="button"
-              onClick={() => setAccent(th)}
-              className={`w-5 h-5 rounded-full border transition-transform ${
-                accent === th ? 'scale-125 ring-2 ring-magenta/50 border-white' : 'border-border hover:scale-110'
-              }`}
-              style={{
-                backgroundColor:
-                  th === 'gold'     ? '#F59E0B'
-                  : th === 'cyber'  ? '#EC4899'
-                  : th === 'emerald'? '#10B981'
-                  : th === 'sapphire'?'#3B82F6'
-                  : th === 'rose'   ? '#FB7185'
-                  : th === 'arctic' ? '#22D3EE'
-                  : th === 'crimson'? '#EF4444'
-                  : th === 'violet' ? '#A855F7'
-                  : '#F97316',
-              }}
-              title={th}
-            />
-          ))}
-        </div>
+        <span className="block mb-2 text-[10px] font-semibold text-muted uppercase">Accent Theme</span>
+        <AccentPicker variant="grid" />
       </div>
     </aside>
   );
