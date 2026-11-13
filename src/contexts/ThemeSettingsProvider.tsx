@@ -1,9 +1,7 @@
 import { useState, useEffect, ReactNode } from 'react';
 import { subscribeToOnlineStatus } from '../services/pwaService';
-import {
-  ThemeSettingsContext,
-  type AccentTheme,
-} from './ThemeSettingsContext';
+import { ThemeSettingsContext, normalizeAccent } from './ThemeSettingsContext';
+import type { AccentTheme } from './ThemeSettingsContext';
 
 const ACCENT_KEY = 'ai_bg_accent_theme';
 const COMPRESSION_KEY = 'ai_bg_compression_enabled';
@@ -14,7 +12,7 @@ const SIDEBAR_KEY = 'ai_bg_sidebar_open';
 
 export function ThemeSettingsProvider({ children }: { children: ReactNode }) {
   const [accent, setAccentState] = useState<AccentTheme>(() => {
-    return (localStorage.getItem(ACCENT_KEY) as AccentTheme) || 'gold';
+    return normalizeAccent(localStorage.getItem(ACCENT_KEY));
   });
 
   const [clientCompression, setClientCompressionState] = useState<boolean>(() => {
