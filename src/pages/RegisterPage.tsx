@@ -3,6 +3,8 @@ import { Link, useNavigate } from 'react-router-dom'
 import axios from 'axios'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
+import VerifyEmailForm from '../components/VerifyEmailForm'
+import { validateGoogleEmail } from '../utils/validation'
 import SocialAuthButtons from '../components/SocialAuthButtons'
 
 import handbagOriginal from '../assets/handbag_original.jpg'
@@ -77,6 +79,8 @@ export default function RegisterPage() {
   const { showToast } = useToast()
   const navigate = useNavigate()
 
+  const [verifyingEmail, setVerifyingEmail] = useState<string | null>(null)
+  const [emailError, setEmailError] = useState<string | null>(null)
   const [name, setName] = useState('')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
@@ -163,11 +167,17 @@ export default function RegisterPage() {
       showToast('Use at least 8 characters, including a letter, a number, and a special character.', 'error')
       return
     }
+    const emailErr = validateGoogleEmail(email)
+    if (emailErr) {
+      setEmailError(emailErr)
+      showToast(emailErr, 'error')
+      return
+    }
     setBusy(true)
     try {
-      await register(name.trim(), email.trim(), password)
-      showToast('Account created. Welcome!', 'success')
-      navigate('/', { replace: true })
+          await register(name.trim(), email.trim(), password)
+      setVerifyingEmail(email.trim().toLowerCase())
+      showToast('We sent a 6-digit code to your email.', 'success')
     } catch (err) {
       let msg = 'Registration failed. Please try again.'
       if (axios.isAxiosError(err)) {
@@ -375,6 +385,14 @@ export default function RegisterPage() {
         />
 
         <div className="relative z-10 w-full max-w-sm flex flex-col gap-6">
+        {verifyingEmail ? (
+            <VerifyEmailForm
+              email={verifyingEmail}
+              onVerified={() => navigate('/', { replace: true })}
+              onBack={() => setVerifyingEmail(null)}
+            />
+          ) : (
+          <>
           {/* Header */}
           <div className="flex flex-col gap-1.5">
             <h1 className="font-display font-bold text-2xl sm:text-3xl text-primary tracking-tight">
@@ -421,12 +439,18 @@ export default function RegisterPage() {
                 type="email"
                 required
                 autoComplete="email"
-                placeholder="you@example.com"
+                placeholder="you@gmail.com"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => { setEmail(e.target.value); setEmailError(null) }}
                 disabled={busy}
-                className="w-full px-3.5 py-2.5 rounded-lg border border-border bg-surface text-sm text-primary placeholder:text-muted focus:outline-none focus:border-magenta disabled:opacity-50"
+                aria-invalid={!!emailError}
+                className={`w-full px-3.5 py-2.5 rounded-lg border bg-surface text-sm text-primary placeholder:text-muted focus:outline-none disabled:opacity-50 ${
+                  emailError ? 'border-danger focus:border-danger' : 'border-border focus:border-magenta'
+                }`}
               />
+              <p className={`text-xs ${emailError ? 'text-danger' : 'text-muted'}`}>
+                {emailError ?? 'Use your Google (Gmail) address. We will email you a 6-digit code to verify it.'}
+              </p>
             </div>
 
             {/* Password */}
@@ -584,6 +608,8 @@ export default function RegisterPage() {
               {busy ? 'Creating Account…' : 'Create Free Account'}
             </button>
           </form>
+          </>
+          )}
         </div>
       </div>
     </main>
