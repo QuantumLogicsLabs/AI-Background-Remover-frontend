@@ -4,7 +4,8 @@ import axios from 'axios'
 import { useAuth } from '../hooks/useAuth'
 import { useToast } from '../hooks/useToast'
 import SocialAuthButtons from '../components/SocialAuthButtons'
-
+import VerifyEmailForm from '../components/VerifyEmailForm'
+import { isEmailNotVerified } from '../utils/apiError'
 import handbagOriginal from '../assets/handbag_original.jpg'
 import handbagRemoved from '../assets/handbag_removed.jpg'
 
@@ -61,6 +62,7 @@ export default function LoginPage() {
   const [password, setPassword] = useState('')
   const [busy,     setBusy]     = useState(false)
   const [showPwd,  setShowPwd]  = useState(false)
+  const [verifyingEmail, setVerifyingEmail] = useState<string | null>(null)
 
   // ── Comparison Slider State & Logic ──────────────────────────────────────────
   const containerRef = useRef<HTMLDivElement>(null)
@@ -126,6 +128,11 @@ export default function LoginPage() {
       navigate(from, { replace: true })
     } catch (err) {
       let msg = 'Login failed. Please check your credentials.'
+            if (isEmailNotVerified(err)) {
+        setVerifyingEmail(email.trim().toLowerCase())
+        showToast('Please verify your email. We sent you a 6-digit code.', 'info')
+        return
+      }
       if (axios.isAxiosError(err)) {
         const data = err.response?.data
         if (typeof data === 'object' && data !== null) {
@@ -371,6 +378,14 @@ export default function LoginPage() {
           >
             {/* Accent top bar */}
             <div className="absolute top-0 left-0 right-0 h-0.5 bg-gradient-to-r from-[#7C3AED] via-[#2FBFB0] to-[#7C3AED] dark:from-[#F59E0B] dark:via-[#F97316] dark:to-[#F59E0B] opacity-60 rounded-t-2xl" />
+                        {verifyingEmail ? (
+              <VerifyEmailForm
+                email={verifyingEmail}
+                onVerified={() => navigate(from, { replace: true })}
+                onBack={() => setVerifyingEmail(null)}
+              />
+            ) : (
+            <>
             <SocialAuthButtons />
             <form onSubmit={handleSubmit} className="flex flex-col gap-4" noValidate>
 
@@ -488,6 +503,8 @@ export default function LoginPage() {
                 )}
               </button>
             </form>
+            </>
+            )}
           </div>
 
           {/* Footer */}

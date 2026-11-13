@@ -15,6 +15,8 @@ export interface AuthContextValue {
   loading:       boolean       // true while validating stored token on mount
   login:         (email: string, password: string) => Promise<void>
   register:      (name: string, email: string, password: string) => Promise<void>
+  verifyEmail:        (email: string, code: string) => Promise<void>  // verifies + signs in
+  resendVerification: (email: string) => Promise<void>
   logout:        () => Promise<void>
   refreshUser:   () => Promise<void>
   completeOAuthLogin: () => Promise<void>  // after Google/GitHub redirect
