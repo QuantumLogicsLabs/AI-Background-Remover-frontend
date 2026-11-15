@@ -35,6 +35,18 @@ export function useKeyboardShortcuts() {
         target.tagName === 'TEXTAREA' ||
         target.isContentEditable;
 
+      // A modal dialog (export, profile, zip, ...) is on screen. Dialogs unmount
+      // when closed, so this is only true while one is really open.
+      const isDialogOpen = document.querySelector('[aria-modal="true"]') !== null;
+
+      // Esc closes the shortcuts cheatsheet and does nothing else, even while
+      // the search box inside it has focus.
+      if (e.key === 'Escape' && isShortcutsOpen) {
+        e.preventDefault();
+        setIsShortcutsOpen(false);
+        return;
+      }
+
       // Handle '?' or 'Ctrl+/'
       if ((e.key === '?' && !isInput) || (e.ctrlKey && e.key === '/')) {
         e.preventDefault();
@@ -42,7 +54,8 @@ export function useKeyboardShortcuts() {
         return;
       }
 
-      if (isInput) return;
+      // No navigation shortcuts while typing or while a dialog is open
+      if (isInput || isDialogOpen) return;
 
       // Number keys for navigation
       if (!e.ctrlKey && !e.metaKey && !e.altKey) {
@@ -70,9 +83,6 @@ export function useKeyboardShortcuts() {
             break;
           case 'Escape':
             e.preventDefault();
-            if (isShortcutsOpen) {
-              setIsShortcutsOpen(false);
-            }
             if (location.pathname === '/login') {
               navigate('/register');
             } else {
@@ -83,7 +93,9 @@ export function useKeyboardShortcuts() {
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    // Capture phase: runs before the dialogs' own Esc handlers (which close and
+    // unmount them), so we still see the dialog in the DOM when we check.
+    window.addEventListener('keydown', handleKeyDown, true);
+    return () => window.removeEventListener('keydown', handleKeyDown, true);
   }, [navigate, location.pathname, isShortcutsOpen, setIsShortcutsOpen]);
 }
