@@ -23,8 +23,9 @@ It does **not** contain any AI or Python code.
 frontend/
 │
 ├── index.html                  ← app shell, loads Google Fonts
-├── vite.config.ts              ← Vite config + /api proxy to backend :8000
+├── vite.config.ts              ← Vite config, /api proxy to backend :8000, Vitest config
 ├── tailwind.config.ts          ← maps CSS tokens to Tailwind utility classes
+├── eslint.config.js            ← ESLint flat config
 ├── postcss.config.js
 ├── tsconfig.json
 ├── package.json
@@ -32,33 +33,51 @@ frontend/
 └── src/
     ├── main.tsx                ← entry point, imports theme tokens
     ├── index.css               ← Tailwind base layers
-    ├── App.tsx                 ← BrowserRouter + route declarations
+    ├── App.tsx                 ← BrowserRouter, providers, route declarations
+    ├── types.ts                ← shared TypeScript types (chat, image analysis)
     │
     ├── theme/
     │   └── tokens.css          ← ALL design tokens (colors, fonts, radius)
     │                             light mode + dark mode variables
     │                             .bg-checker utility class
     │
-    ├── components/             ← reusable UI building blocks
-    │   ├── Navbar.tsx          ← sticky header, nav links, theme toggle
-    │   ├── ThemeToggle.tsx     ← light/dark switch, persists to localStorage
-    │   ├── UploadZone.tsx      ← drag-and-drop file input (react-dropzone)
-    │   ├── ImageCanvas.tsx     ← result/original/compare slider view
-    │   ├── DownloadButton.tsx  ← <a download> link styled as button
-    │   └── HistoryCard.tsx     ← single history item card with thumbnail
-    │
+    ├── components/             ← reusable UI building blocks (tests in __tests__/)
+    ├── contexts/               ← React contexts and providers (auth, toast, theme,
+    │                             workspace, brand kit, active image)
     ├── hooks/                  ← data-fetching and state logic
-    │   ├── useUpload.ts        ← POST /api/remove-background, state machine
-    │   └── useHistory.ts       ← GET /api/history, DELETE /api/image/:id
-    │
-    └── pages/                  ← one file per route
-        ├── HomePage.tsx        ← upload → processing → result flow
-        └── HistoryPage.tsx     ← history grid with empty/loading/error states
+    ├── pages/                  ← one file per route
+    ├── services/               ← API clients and helpers (apiClient, chatService, ...)
+    ├── utils/                  ← pure helpers such as validation and apiError
+    └── test/                   ← Vitest setup and shared mock data
 ```
 
 ---
 
-## Pages and What They Do
+## Routes
+
+All routes are declared in `src/App.tsx`. Pages are lazy-loaded.
+
+| Route | Page | Access |
+|-------|------|--------|
+| `/login` | `LoginPage` | Public |
+| `/register` | `RegisterPage` | Public |
+| `/auth/callback` | `AuthCallbackPage` | Public (Google/GitHub sign-in landing) |
+| `/forgot-password` | `ForgotPasswordPage` | Public |
+| `/reset-password` | `ResetPasswordPage` | Public |
+| `/` | `HomePage` | Login required |
+| `/enhance` | `EnhancePage` | Login required |
+| `/replace-bg` | `ReplaceBgPage` | Login required |
+| `/recolor-and-eraser` | `RecolorAndEraserPage` | Login required |
+| `/smart-crop` | `SmartCropPage` | Login required |
+| `/batch` | `BatchPage` | Login required |
+| `/shadow` | `ShadowPage` | Login required |
+| `/history` | `HistoryPage` | Login required |
+| `/settings` | `SettingsPage` | Login required |
+| `/ai-analysis` | `AIAnalysisPage` | Login required |
+| `/similarity-search` | `SimilaritySearchPage` | Login required |
+| `*` | `NotFoundPage` | Public |
+
+Each page renders its own `<main>` element. Do not wrap pages in another `<main>`.
 
 ### `/` — HomePage
 1. Shows `UploadZone` — user drags or picks an image.
@@ -100,7 +119,7 @@ All colors, fonts, and spacing come from `src/theme/tokens.css` as CSS custom pr
 ```bash
 # Make sure you are inside the frontend/ folder
 
-# Copy environment config (optional — only needed for production API URL or feature flags)
+# Copy environment config (optional — only needed for production API URL or allowed email domains)
 cp .env.example .env
 
 npm install
@@ -112,10 +131,25 @@ All `/api/*` requests are proxied to `http://localhost:8000` (the backend must b
 
 Other commands:
 ```bash
-npm run build     # production build → dist/
-npm run preview   # preview the production build locally
-npm run lint      # run ESLint
+npm run build       # type-check + production build → dist/
+npm run preview     # preview the production build locally
+npm run typecheck   # TypeScript check only, no build output
+npm run lint        # run ESLint (warnings count as failures)
+npm test            # run all tests once
+npm run test:watch  # re-run tests on file changes
 ```
+
+Before opening a pull request, make sure `npm run typecheck`, `npm run lint`, `npm test` and `npm run build` all pass.
+
+---
+
+## Testing
+
+Tests use [Vitest](https://vitest.dev) with React Testing Library and jsdom.
+
+- Test files live in `__tests__/` folders next to the code they test, for example `src/components/__tests__/` and `src/utils/__tests__/`. The pattern in `vite.config.ts` is `src/**/__tests__/**/*.{test,spec}.{ts,tsx}`.
+- Global setup is in `src/test/setup.ts`; shared mock data is in `src/test/mocks/`.
+- Test files are excluded from `tsc`, so they are not type-checked during `npm run build`.
 
 ---
 
@@ -126,10 +160,11 @@ npm run lint      # run ESLint
 3. Add `aria-label` / `role` attributes for accessibility.
 4. Export as default.
 5. Import it in the page or component that needs it.
+6. Add a test in `src/components/__tests__/YourComponent.test.tsx`.
 
 ## Adding a New Page
 
-1. Create `src/pages/YourPage.tsx`.
+1. Create `src/pages/YourPage.tsx` (render your own `<main>` as the page root).
 2. Add a `<Route>` for it in `src/App.tsx`.
 3. Add a `<NavLink>` in `src/components/Navbar.tsx`.
 
@@ -156,16 +191,22 @@ The backend must be running on port 8000 for the proxy to work in development.
 
 ## Dependencies
 
+Versions below are the ranges declared in `package.json`.
+
 | Package | Version | Purpose |
 |---------|---------|---------|
-| react | 18.3.1 | UI framework |
-| react-dom | 18.3.1 | DOM rendering |
-| react-router-dom | 6.26.2 | Client-side routing |
-| axios | 1.7.7 | HTTP requests |
-| react-dropzone | 14.2.9 | Drag-and-drop file upload |
-| tailwindcss | 3.4.13 | Utility CSS |
-| vite | 5.4.7 | Dev server + build tool |
-| typescript | 5.5.4 | Type safety |
+| react | ^18.3.1 | UI framework |
+| react-dom | ^18.3.1 | DOM rendering |
+| react-router-dom | ^6.26.2 | Client-side routing |
+| axios | ^1.7.7 | HTTP requests |
+| react-dropzone | ^14.2.9 | Drag-and-drop file upload |
+| jszip | ^3.10.1 | ZIP export |
+| dompurify | ^3.2.6 | HTML sanitising |
+| tailwindcss | ^3.4.13 | Utility CSS |
+| vite | ^5.4.7 | Dev server + build tool |
+| typescript | ^5.5.4 | Type safety |
+| vitest | ^4.1.11 | Test runner |
+| @testing-library/react | ^16.3.2 | Component testing |
 
 ---
 
@@ -183,13 +224,15 @@ The backend must be running on port 8000 for the proxy to work in development.
 - [x] useHistory hook
 - [x] HomePage full flow
 - [x] HistoryPage with all states
+- [x] User authentication UI (login / register / password reset pages)
+- [x] Email verification on sign-up (`VerifyEmailForm`)
+- [x] Background replacement panel (color picker, custom image upload)
+- [x] Toast notification system for errors/success
+- [x] Vitest setup with component and utility tests
 
 ### Next (for Web Team to pick up)
-- [ ] User authentication UI (login / register pages)
-- [ ] Background replacement panel (color picker, custom image upload)
 - [x] Batch upload — via the AI Chatbot Widget (Analyze/Suggest/Caption modes)
 - [ ] Loading skeleton components (replace spinners)
-- [ ] Toast notification system for errors/success
 - [ ] Mobile layout polish
 
 ---
