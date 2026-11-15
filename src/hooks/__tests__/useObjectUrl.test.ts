@@ -67,8 +67,12 @@ describe('useObjectUrl', () => {
   })
 
   it('revokes the URL when the component unmounts', () => {
-    const { unmount } = renderHook(() => useObjectUrl(makeFile('a.png')))
+    // Create the file once: a new File on every render would re-trigger the effect forever.
+    const file = makeFile('a.png')
+    const { unmount } = renderHook(() => useObjectUrl(file))
+
     unmount()
+
     expect(URL.revokeObjectURL).toHaveBeenCalledTimes(1)
   })
 })
