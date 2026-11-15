@@ -16,6 +16,7 @@ import PageLoader from './components/PageLoader'
 import BottomNav from './components/BottomNav'
 import ShortcutsModal from './components/ShortcutsModal'
 import AnimatedBackground from './components/AnimatedBackground'
+import AppErrorBoundary from './components/AppErrorBoundary'
 
 // ── Lazy-loaded pages ───────────────────────────────────────────────────────
 const LoginPage = lazy(() => import('./pages/LoginPage'))
@@ -79,32 +80,35 @@ function MainLayout() {
       <div className="flex-1 flex w-full relative z-[1]">
         {/* Each page renders its own <main>, so this wrapper must not be one (no nested landmarks). */}
         <div className={`flex-1 min-w-0 ${!isAuthPage ? 'pb-16 md:pb-6' : ''}`}>
-          <Suspense fallback={<PageLoader />}>
-            <Routes>
-              {/* Public routes */}
-              <Route path="/login" element={<LoginPage />} />
-              <Route path="/register" element={<RegisterPage />} />
-              <Route path="/auth/callback" element={<AuthCallbackPage />} />
-              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-              <Route path="/reset-password" element={<ResetPasswordPage />} />
+          {/* resetKey clears a caught error when the user navigates to another route */}
+          <AppErrorBoundary resetKey={location.pathname}>
+            <Suspense fallback={<PageLoader />}>
+              <Routes>
+                {/* Public routes */}
+                <Route path="/login" element={<LoginPage />} />
+                <Route path="/register" element={<RegisterPage />} />
+                <Route path="/auth/callback" element={<AuthCallbackPage />} />
+                <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+                <Route path="/reset-password" element={<ResetPasswordPage />} />
 
-              {/* Protected routes */}
-              <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
-              <Route path="/enhance" element={<ProtectedRoute><EnhancePage /></ProtectedRoute>} />
-              <Route path="/replace-bg" element={<ProtectedRoute><ReplaceBgPage /></ProtectedRoute>} />
-              <Route path="/recolor-and-eraser" element={<ProtectedRoute><RecolorAndEraserPage /></ProtectedRoute>} />
-              <Route path="/smart-crop" element={<ProtectedRoute><SmartCropPage /></ProtectedRoute>} />
-              <Route path="/batch" element={<ProtectedRoute><BatchPage /></ProtectedRoute>} />
-              <Route path="/shadow" element={<ProtectedRoute><ShadowPage /></ProtectedRoute>} />
-              <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
-              <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-              <Route path="/ai-analysis" element={<ProtectedRoute><AIAnalysisPage /></ProtectedRoute>} />
-              <Route path="/similarity-search" element={<ProtectedRoute><SimilaritySearchPage /></ProtectedRoute>} />
+                {/* Protected routes */}
+                <Route path="/" element={<ProtectedRoute><HomePage /></ProtectedRoute>} />
+                <Route path="/enhance" element={<ProtectedRoute><EnhancePage /></ProtectedRoute>} />
+                <Route path="/replace-bg" element={<ProtectedRoute><ReplaceBgPage /></ProtectedRoute>} />
+                <Route path="/recolor-and-eraser" element={<ProtectedRoute><RecolorAndEraserPage /></ProtectedRoute>} />
+                <Route path="/smart-crop" element={<ProtectedRoute><SmartCropPage /></ProtectedRoute>} />
+                <Route path="/batch" element={<ProtectedRoute><BatchPage /></ProtectedRoute>} />
+                <Route path="/shadow" element={<ProtectedRoute><ShadowPage /></ProtectedRoute>} />
+                <Route path="/history" element={<ProtectedRoute><HistoryPage /></ProtectedRoute>} />
+                <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+                <Route path="/ai-analysis" element={<ProtectedRoute><AIAnalysisPage /></ProtectedRoute>} />
+                <Route path="/similarity-search" element={<ProtectedRoute><SimilaritySearchPage /></ProtectedRoute>} />
 
-              {/* Catch-all */}
-              <Route path="*" element={<NotFoundPage />} />
-            </Routes>
-          </Suspense>
+                {/* Catch-all */}
+                <Route path="*" element={<NotFoundPage />} />
+              </Routes>
+            </Suspense>
+          </AppErrorBoundary>
         </div>
       </div>
 
