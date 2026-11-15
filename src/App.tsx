@@ -77,7 +77,8 @@ function MainLayout() {
       <AnimatedBackground />
       {!isAuthPage && <Navbar />}
       <div className="flex-1 flex w-full relative z-[1]">
-        <main className={`flex-1 min-w-0 ${!isAuthPage ? 'pb-16 md:pb-6' : ''}`}>
+        {/* Each page renders its own <main>, so this wrapper must not be one (no nested landmarks). */}
+        <div className={`flex-1 min-w-0 ${!isAuthPage ? 'pb-16 md:pb-6' : ''}`}>
           <Suspense fallback={<PageLoader />}>
             <Routes>
               {/* Public routes */}
@@ -104,7 +105,7 @@ function MainLayout() {
               <Route path="*" element={<NotFoundPage />} />
             </Routes>
           </Suspense>
-        </main>
+        </div>
       </div>
 
       {user && !isAuthPage && <BottomNav />}
