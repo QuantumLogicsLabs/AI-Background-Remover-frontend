@@ -172,6 +172,7 @@ export default function ZipExportModal({
                 onChange={e => setNameTemplate(e.target.value)}
                 disabled={isZipping}
                 placeholder="{original_name}_processed"
+                aria-label="File naming template"
                 className="w-full px-3 py-2 bg-surface border border-border rounded-lg text-sm font-mono text-primary focus:outline-none focus:ring-2 focus:ring-teal"
               />
               <p className="text-[10px] text-muted mt-1.5">Use <code>{'{original_name}'}</code> to keep original filenames.</p>
