@@ -1,42 +1,58 @@
-import { useState, useEffect, ReactNode } from 'react';
-import { subscribeToOnlineStatus } from '../services/pwaService';
-import { ThemeSettingsContext, normalizeAccent } from './ThemeSettingsContext';
-import type { AccentTheme } from './ThemeSettingsContext';
+import { useState, useEffect, ReactNode } from "react";
+import { subscribeToOnlineStatus } from "../services/pwaService";
+import { ThemeSettingsContext, normalizeAccent } from "./ThemeSettingsContext";
+import type { AccentTheme } from "./ThemeSettingsContext";
 
-const ACCENT_KEY = 'ai_bg_accent_theme';
-const COMPRESSION_KEY = 'ai_bg_compression_enabled';
-const QUALITY_KEY = 'ai_bg_compression_quality';
-const MAX_DIM_KEY = 'ai_bg_max_dimension';
-const HAPTIC_KEY = 'ai_bg_haptic';
-const SIDEBAR_KEY = 'ai_bg_sidebar_open';
+const ACCENT_KEY = "ai_bg_accent_theme";
+const COMPRESSION_KEY = "ai_bg_compression_enabled";
+const QUALITY_KEY = "ai_bg_compression_quality";
+const MAX_DIM_KEY = "ai_bg_max_dimension";
+const HAPTIC_KEY = "ai_bg_haptic";
+const SIDEBAR_KEY = "ai_bg_sidebar_open";
+
+// Read a number from localStorage, ignoring junk ("abc", "NaN", out of range) so a
+// corrupted value can never reach the image compressor.
+function readNumber(
+  key: string,
+  fallback: number,
+  min: number,
+  max: number,
+): number {
+  const raw = localStorage.getItem(key);
+  if (raw === null) return fallback;
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= min && value <= max
+    ? value
+    : fallback;
+}
 
 export function ThemeSettingsProvider({ children }: { children: ReactNode }) {
   const [accent, setAccentState] = useState<AccentTheme>(() => {
     return normalizeAccent(localStorage.getItem(ACCENT_KEY));
   });
 
-  const [clientCompression, setClientCompressionState] = useState<boolean>(() => {
-    const saved = localStorage.getItem(COMPRESSION_KEY);
-    return saved !== null ? saved === 'true' : true;
-  });
+  const [clientCompression, setClientCompressionState] = useState<boolean>(
+    () => {
+      const saved = localStorage.getItem(COMPRESSION_KEY);
+      return saved !== null ? saved === "true" : true;
+    },
+  );
 
-  const [compressionQuality, setCompressionQualityState] = useState<number>(() => {
-    const saved = localStorage.getItem(QUALITY_KEY);
-    return saved ? parseFloat(saved) : 0.92;
-  });
+  const [compressionQuality, setCompressionQualityState] = useState<number>(
+    () => readNumber(QUALITY_KEY, 0.92, 0.1, 1),
+  );
 
-  const [maxDimension, setMaxDimensionState] = useState<number>(() => {
-    const saved = localStorage.getItem(MAX_DIM_KEY);
-    return saved ? parseInt(saved, 10) : 2500;
-  });
+  const [maxDimension, setMaxDimensionState] = useState<number>(() =>
+    readNumber(MAX_DIM_KEY, 2500, 100, 10000),
+  );
 
   const [hapticFeedback, setHapticFeedbackState] = useState<boolean>(() => {
-    return localStorage.getItem(HAPTIC_KEY) === 'true';
+    return localStorage.getItem(HAPTIC_KEY) === "true";
   });
 
   const [sidebarOpen, setSidebarOpenState] = useState<boolean>(() => {
     const saved = localStorage.getItem(SIDEBAR_KEY);
-    return saved !== null ? saved === 'true' : true;
+    return saved !== null ? saved === "true" : true;
   });
 
   const [isShortcutsOpen, setIsShortcutsOpen] = useState(false);
@@ -45,21 +61,21 @@ export function ThemeSettingsProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.documentElement;
     // Never apply accent overrides on auth pages — they use a fixed violet palette
-    if (root.hasAttribute('data-auth-page')) return
-    root.setAttribute('data-accent', accent);
+    if (root.hasAttribute("data-auth-page")) return;
+    root.setAttribute("data-accent", accent);
     localStorage.setItem(ACCENT_KEY, accent);
   }, [accent]);
 
   // When navigating away from an auth page, reapply the saved accent
   useEffect(() => {
     const handler = () => {
-      const root = document.documentElement
-      if (!root.hasAttribute('data-auth-page')) {
-        root.setAttribute('data-accent', accent)
+      const root = document.documentElement;
+      if (!root.hasAttribute("data-auth-page")) {
+        root.setAttribute("data-accent", accent);
       }
-    }
-    window.addEventListener('reapply-accent', handler)
-    return () => window.removeEventListener('reapply-accent', handler)
+    };
+    window.addEventListener("reapply-accent", handler);
+    return () => window.removeEventListener("reapply-accent", handler);
   }, [accent]);
 
   useEffect(() => {
@@ -125,4 +141,3 @@ export function ThemeSettingsProvider({ children }: { children: ReactNode }) {
     </ThemeSettingsContext.Provider>
   );
 }
-
